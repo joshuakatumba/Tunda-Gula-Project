@@ -1,0 +1,17 @@
+export const STR = {
+  en: { market: "Marketplace", how: "How it works", who: "Who it is for", prices: "Prices", login: "Log in", join: "Join TundaGula",
+        browse: "Browse produce", harvest: "Harvest plans", myorders: "My orders", overview: "Overview", listings: "My listings",
+        orders: "Orders", ratings: "Ratings", payouts: "Payouts", verify: "Verifications", accounts: "Accounts",
+        disputes: "Disputes", delivery: "Delivery", reports: "Reports", buy: "Buy now", preorder: "Pre-order",
+        pay: "Pay with mobile money", live: "Live market prices", logout: "Log out" },
+  lg: { market: "Akatale", how: "Engeri gy'ekola", who: "Ani gw'ekwatako", prices: "Emiwendo", login: "Yingira", join: "Weegatte ku TundaGula",
+        browse: "Noonya ebibala", harvest: "Enteekateeka y'amakungula", myorders: "Ebiragiro byange", overview: "Okulambika",
+        listings: "Ebintu byange", orders: "Ebiragiro", ratings: "Obuwi bw'emiwendo", payouts: "Ensimbi", verify: "Okukakasa",
+        accounts: "Akawunti", disputes: "Enkaayana", delivery: "Okutuusa", reports: "Alipoota", buy: "Gula kaakati",
+        preorder: "Sooka olage", pay: "Sasula ne mobile money", live: "Emiwendo gy'akatale", logout: "Fuluma" },
+  sw: { market: "Soko", how: "Jinsi inavyofanya kazi", who: "Ni kwa nani", prices: "Bei", login: "Ingia", join: "Jiunge na TundaGula",
+        browse: "Vinjari mazao", harvest: "Mipango ya mavuno", myorders: "Maagizo yangu", overview: "Muhtasari",
+        listings: "Bidhaa zangu", orders: "Maagizo", ratings: "Ukadiriaji", payouts: "Malipo", verify: "Uthibitisho",
+        accounts: "Akaunti", disputes: "Migogoro", delivery: "Uwasilishaji", reports: "Ripoti", buy: "Nunua sasa",
+        preorder: "Agiza mapema", pay: "Lipa kwa mobile money", live: "Bei za soko", logout: "Toka" },
+};
