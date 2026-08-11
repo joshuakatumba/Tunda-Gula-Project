@@ -12,10 +12,10 @@ jobs:
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@master
         with:
-        host: ${{ secrets.GCP_HOST }}
-        username: ${{ secrets.GCP_USERNAME }}
-        key: ${{ secrets.GCP_SSH_KEY }}
-        script: |
-          cd ~/Tunda-Gula-Project
-          git pull origin main
-          docker compose -f docke-compose.yml -f docker-compose.prod.yml up --build -d
+          host: ${{ secrets.AZURE_HOST }}
+          username: ${{ secrets.AZURE_USERNAME }}
+          key: ${{ secrets.AZURE_SSH_KEY }}
+          script: |
+            cd ~/Tunda-Gula-Project
+            git pull origin main
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
