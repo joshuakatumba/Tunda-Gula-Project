@@ -9,10 +9,23 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Normalize SSH host
+        id: ssh_host
+        env:
+          RAW_HOST: ${{ secrets.AZURE_HOST }}
+        run: |
+          set -euo pipefail
+          HOST="$(printf '%s' "$RAW_HOST" | sed -E 's#^[a-zA-Z]+://##; s#/.*$##')"
+          if [ -z "$HOST" ]; then
+            echo "AZURE_HOST secret is empty or invalid."
+            exit 1
+          fi
+          echo "value=$HOST" >> "$GITHUB_OUTPUT"
+
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.AZURE_HOST }}
+          host: ${{ steps.ssh_host.outputs.value }}
           username: ${{ secrets.AZURE_USERNAME }}
           key: ${{ secrets.AZURE_SSH_KEY }}
           script: |
