@@ -50,15 +50,16 @@ class UserAdmin(BaseUserAdmin):
     # Quick action: approve pending sellers
     actions = ["approve_sellers", "reject_sellers"]
 
-    @admin.action(description="✅ Approve selected sellers")
+    @admin.action(description="Approve selected sellers")
     def approve_sellers(self, request, queryset):
+        # pyrefly: ignore [missing-import]
         from django.utils import timezone
         updated = queryset.filter(role="seller", is_verified=False).update(
             is_verified=True, verified_at=timezone.now()
         )
         self.message_user(request, f"{updated} seller(s) approved.")
 
-    @admin.action(description="❌ Reject selected sellers")
+    @admin.action(description=" Reject selected sellers")
     def reject_sellers(self, request, queryset):
         updated = queryset.filter(role="seller", is_verified=False).update(
             is_verified=False, rejection_reason="Rejected by administrator"
