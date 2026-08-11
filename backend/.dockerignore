@@ -1,0 +1,44 @@
+# Virtual environment
+venv/
+
+# Database files
+db.sqlite3
+*.sqlite3
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Environment files (secrets — never bake into image)
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Media uploads (mounted as volume, not baked in)
+media/
+
+# Static collected files (rebuilt in container)
+staticfiles/
+
+# Docker files (no need to copy themselves)
+Dockerfile
+docker-compose.yml
+
+# Documentation
+*.md
+LICENSE

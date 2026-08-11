@@ -1,0 +1,11 @@
+# Production override for Docker Compose
+# Maps the frontend to port 80 directly for public web access
+
+services:
+  frontend:
+    ports:
+      - "80:80"
+      
+  # No ports exposed for backend; it is accessed internally by the frontend container/nginx proxy
+  backend:
+    ports: []
