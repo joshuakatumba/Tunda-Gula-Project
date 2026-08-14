@@ -134,7 +134,7 @@ export default function BuyerApp(props) {
 
   return (
     <>
-      {tab === "browse" && <Marketplace listings={listings} f={f} setF={setF} onOpen={setOpen} cart={cart} cartTotal={cartTotal} onCheckout={() => setCheckout(true)} />}
+      {tab === "browse" && <Marketplace f={f} setF={setF} onOpen={setOpen} cart={cart} cartTotal={cartTotal} onCheckout={() => setCheckout(true)} />}
       {tab === "preorders" && <PreOrders plans={plans} t={t} onPreorder={setPreordering} />}
       {tab === "myorders" && <MyOrders orders={myOrders} onConfirm={confirmReceipt} onRate={setRating} />}
 

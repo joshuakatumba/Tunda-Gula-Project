@@ -31,7 +31,7 @@ interface AuthContextType {
   user: UserSession | null;
   loading: boolean;
   /** Request an OTP code for a phone number */
-  requestOtp: (phone: string) => Promise<{ code_dev_only?: string }>;
+  requestOtp: (phone: string) => Promise<{ message: string }>;
   /** Verify an OTP and get back a token + user (or verified flag for new users) */
   verifyOtp: (phone: string, code: string) => Promise<{ token?: string; user?: UserSession; verified?: boolean }>;
   /** Register a new account (returns token + user) */

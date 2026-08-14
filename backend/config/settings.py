@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
+    "storages",
 
     # TundaGula apps
     "accounts",
@@ -205,3 +206,28 @@ AIRTEL_MONEY_API_SECRET = os.environ.get("AIRTEL_MONEY_API_SECRET", "")
 # ---------------------------------------------------------------------------
 AT_API_KEY = os.environ.get("AT_API_KEY", "")
 AT_USERNAME = os.environ.get("AT_USERNAME", "sandbox")
+
+
+# ---------------------------------------------------------------------------
+# Media / File Storage — Azure Blob Storage (production) or local (dev)
+# ---------------------------------------------------------------------------
+AZURE_ACCOUNT_NAME = os.environ.get("AZURE_ACCOUNT_NAME", "")
+AZURE_ACCOUNT_KEY = os.environ.get("AZURE_ACCOUNT_KEY", "")
+AZURE_CONTAINER = os.environ.get("AZURE_CONTAINER", "tundagula-media")
+
+if AZURE_ACCOUNT_NAME and AZURE_ACCOUNT_KEY:
+    # Production: store all media files in Azure Blob Storage
+    DEFAULT_FILE_STORAGE = "storages.backends.azure_storage.AzureStorage"
+    AZURE_CUSTOM_DOMAIN = f"{AZURE_ACCOUNT_NAME}.blob.core.windows.net"
+    MEDIA_URL = f"https://{AZURE_CUSTOM_DOMAIN}/{AZURE_CONTAINER}/"
+    # Restrict file upload size: 10 MB for photos, 5 MB for voice notes
+    DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
+    FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
+else:
+    # Local dev: keep files on disk under /app/media/
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+    MEDIA_URL = "media/"
+    MEDIA_ROOT = BASE_DIR / "media"
+    DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+    FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+

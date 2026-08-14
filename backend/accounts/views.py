@@ -36,20 +36,46 @@ class RegisterView(generics.CreateAPIView):
 def request_otp(request):
     """
     POST /api/v1/accounts/otp/request/
-    Send a 6-digit OTP to the provided phone number.
+    Send a 6-digit OTP to the provided phone number via Africa's Talking.
     """
     phone = request.data.get("phone")
     if not phone:
         return Response({"error": "Phone number required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # TODO: Integrate SMS gateway (Africa's Talking / Twilio)
-    # For now, generate and return in response (dev only)
-    import random
-    code = str(random.randint(100000, 999999))
+    # Format phone number for AT (must include country code, e.g., +256)
+    if phone.startswith("0"):
+        phone = "+256" + phone[1:]
+    elif not phone.startswith("+"):
+        phone = "+" + phone
 
+    import random
     from django.utils import timezone
     from datetime import timedelta
     from .models import OTP
+    from django.conf import settings
+    import africastalking
+
+    code = str(random.randint(100000, 999999))
+
+    # Initialize Africa's Talking
+    africastalking.initialize(settings.AT_USERNAME, settings.AT_API_KEY)
+    sms = africastalking.SMS
+
+    try:
+        if settings.AT_API_KEY:
+            # Send SMS
+            message = f"Your Tunda Gula verification code is {code}. It expires in 10 minutes."
+            response = sms.send(message, [phone])
+            print("SMS Response:", response)
+        else:
+            print(f"DEV MODE: SMS sending skipped. Code is {code}")
+            
+    except Exception as e:
+        print(f"Encountered an error while sending SMS: {e}")
+        return Response(
+            {"error": "Failed to send SMS. Please try again later."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
 
     OTP.objects.create(
         phone=phone,
@@ -57,7 +83,7 @@ def request_otp(request):
         expires_at=timezone.now() + timedelta(minutes=10),
     )
 
-    return Response({"message": "OTP sent", "code_dev_only": code})
+    return Response({"message": "OTP sent successfully"})
 
 
 @api_view(["POST"])

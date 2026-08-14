@@ -6,6 +6,15 @@ import { Field } from "../components/Field";
 import { Pick } from "../components/Pick";
 import { useAuth } from "../context/AuthContext";
 
+/** Normalise a Ugandan phone number to +256XXXXXXXXX format */
+function formatPhone(phone: string): string {
+  const digits = phone.replace(/\s+/g, "");
+  if (digits.startsWith("+256")) return digits;
+  if (digits.startsWith("256")) return "+" + digits;
+  if (digits.startsWith("0")) return "+256" + digits.slice(1);
+  return "+256" + digits;
+}
+
 export default function Auth({ init, onClose, onDone, say }) {
   const { requestOtp, verifyOtp, register } = useAuth();
 
@@ -19,7 +28,6 @@ export default function Auth({ init, onClose, onDone, say }) {
   const [manual, setManual] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [devCode, setDevCode] = useState("");
 
   const otpOk = otp.join("").length === 6;
   const DISTRICTS = ["Wakiso", "Kampala", "Mukono", "Mpigi", "Luweero", "Nakaseke", "Buikwe", "Mityana"];
@@ -28,13 +36,9 @@ export default function Auth({ init, onClose, onDone, say }) {
     setBusy(true);
     setError("");
     try {
-      const res = await requestOtp(d.phone);
-      // In dev mode, the API returns the code so you don't need real SMS
-      if (res.code_dev_only) {
-        setDevCode(res.code_dev_only);
-        say(`Dev mode — your code is: ${res.code_dev_only}`);
-      }
+      await requestOtp(formatPhone(d.phone));
       setStep("otp");
+      say("Code sent! Check your phone.");
     } catch (err: any) {
       setError(err.data?.error || err.message || "Failed to send code");
     } finally {
@@ -46,7 +50,7 @@ export default function Auth({ init, onClose, onDone, say }) {
     setBusy(true);
     setError("");
     try {
-      const res = await verifyOtp(d.phone, otp.join(""));
+      const res = await verifyOtp(formatPhone(d.phone), otp.join(""));
       if (res.token && res.user) {
         // Existing user — logged in
         onDone();
@@ -65,20 +69,21 @@ export default function Auth({ init, onClose, onDone, say }) {
     }
   };
 
+  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const handleRegister = async () => {
     setBusy(true);
     setError("");
     try {
       await register({
-        phone: d.phone,
+        phone: formatPhone(d.phone),
         name: d.name,
         role,
         ...(role === "seller" ? {
           seller_type: type,
           nin: d.nin,
           district: d.district,
-          gps_lat: gps ? 0.4044 : undefined,
-          gps_lng: gps ? 32.4594 : undefined,
+          gps_lat: gpsCoords ? gpsCoords.lat : undefined,
+          gps_lng: gpsCoords ? gpsCoords.lng : undefined,
           manual_location: manual,
         } : {}),
         ...(role === "buyer" ? { buyer_type: type, district: d.district } : {}),
@@ -91,7 +96,6 @@ export default function Auth({ init, onClose, onDone, say }) {
     } catch (err: any) {
       const data = err.data;
       if (data && typeof data === "object") {
-        // Show first field error
         const firstField = Object.keys(data)[0];
         const msg = Array.isArray(data[firstField]) ? data[firstField][0] : data[firstField];
         setError(`${firstField}: ${msg}`);
@@ -112,7 +116,7 @@ export default function Auth({ init, onClose, onDone, say }) {
         <Field label="Phone number"><input placeholder="0772 000 000" value={d.phone} onChange={e => setD({ ...d, phone: e.target.value })} /></Field>
         {step === "otp" ? (
           <>
-            <Field label="Enter the 6-digit code" hint={devCode ? `Dev code: ${devCode}` : "Check your phone for the code. It expires after 10 minutes."}>
+            <Field label="Enter the 6-digit code" hint="Check your phone for the code. It expires after 10 minutes.">
               <div className="otp">
                 {otp.map((v, i) => (
                   <input key={i} maxLength={1} value={v} inputMode="numeric"
@@ -206,8 +210,7 @@ export default function Auth({ init, onClose, onDone, say }) {
       {step === "otp" && (
         <>
           <div style={{ textAlign: "center", fontSize: 30 }}><Smartphone size="1em" /></div>
-          <p className="hint" style={{ textAlign: "center" }}>We sent a 6-digit code to {d.phone || "your phone"}. It expires in 10 minutes.</p>
-          {devCode && <p className="hint mono" style={{ textAlign: "center", color: "#3C5347" }}>Dev code: {devCode}</p>}
+          <p className="hint" style={{ textAlign: "center" }}>We sent a 6-digit code to {formatPhone(d.phone)}. It expires in 10 minutes.</p>
           <div className="otp" style={{ justifyContent: "center" }}>
             {otp.map((v, i) => (
               <input key={i} maxLength={1} value={v} inputMode="numeric"
@@ -216,15 +219,14 @@ export default function Auth({ init, onClose, onDone, say }) {
             ))}
           </div>
           <button className="link" style={{ alignSelf: "center" }} onClick={async () => {
-            const res = await requestOtp(d.phone);
-            if (res.code_dev_only) { setDevCode(res.code_dev_only); say(`New code: ${res.code_dev_only}`); }
-            else say("New code sent. You can request 3 codes per hour.");
+            await requestOtp(formatPhone(d.phone));
+            say("New code sent. You can request 3 codes per hour.");
           }}>Send the code again</button>
           <button className="btn-maize" disabled={!otpOk || busy} onClick={async () => {
             setBusy(true);
             setError("");
             try {
-              const res = await verifyOtp(d.phone, otp.join(""));
+              const res = await verifyOtp(formatPhone(d.phone), otp.join(""));
               if (res.token && res.user) {
                 // Existing user logging in during registration flow
                 onDone();
@@ -250,8 +252,21 @@ export default function Auth({ init, onClose, onDone, say }) {
       {step === "gps" && (
         <>
           <p className="hint">Pin your farm. Buyers only ever see your district — never your exact coordinates.</p>
-          <div className="map">{gps ? <span className="mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><MapPin size="1em" /> {gps}</span> : "Map view · tap below to pin"}</div>
-          <button className="btn-alt" style={{ borderColor: "#16261E", display: 'inline-flex', alignItems: 'center', gap: 6 }} onClick={() => setGps("0.4044°N, 32.4594°E")}><MapPin size="1em" /> Use my current location</button>
+          <div className="map">{gps ? <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><MapPin size="1em" /> {gps}</span> : "Map view · tap below to pin"}</div>
+          <button className="btn-alt" style={{ borderColor: "#16261E", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => {
+            navigator.geolocation?.getCurrentPosition(
+              pos => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                setGpsCoords({ lat, lng });
+                setGps(`${lat.toFixed(4)}N, ${lng.toFixed(4)}E`);
+              },
+              () => {
+                setError("Location access denied. Please enter your location manually below.");
+              },
+              { enableHighAccuracy: true, timeout: 10000 }
+            );
+          }}><MapPin size="1em" /> Use my current location</button>
           <Field label="Or describe where the farm is" hint="Use this if location services are off or the signal is weak.">
             <input value={manual} placeholder="Kasangati, Gayaza road, 2 km past the trading centre" onChange={e => setManual(e.target.value)} />
           </Field>

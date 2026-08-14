@@ -14,9 +14,60 @@ class InitiatePaymentView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        # TODO: Call MTN MoMo / Airtel Money API here
-        # For now, auto-set to "held" (simulating successful payment)
-        serializer.save(status="held")
+        from django.conf import settings
+        import requests
+        import uuid
+
+        payment = serializer.save(status="pending")
+        
+        # Real MTN MoMo Collection API integration
+        try:
+            if settings.MTN_MOMO_API_KEY:
+                # 1. Get Access Token
+                token_res = requests.post(
+                    "https://sandbox.momodeveloper.mtn.com/collection/token/",
+                    auth=(settings.MTN_MOMO_API_KEY, settings.MTN_MOMO_API_SECRET)
+                )
+                token = token_res.json().get("access_token")
+                
+                # 2. Request to Pay
+                ext_ref = str(uuid.uuid4())
+                payment.external_ref = ext_ref
+                payment.save()
+                
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "X-Reference-Id": ext_ref,
+                    "X-Target-Environment": "sandbox",
+                    "Content-Type": "application/json",
+                    "Ocp-Apim-Subscription-Key": settings.MTN_MOMO_API_KEY
+                }
+                
+                payload = {
+                    "amount": str(payment.amount),
+                    "currency": "UGX",
+                    "externalId": ext_ref,
+                    "payer": {
+                        "partyIdType": "MSISDN",
+                        "partyId": self.request.user.phone.replace("+", "")
+                    },
+                    "payerMessage": "Payment for Tunda Gula Order",
+                    "payeeNote": "Tunda Gula Escrow"
+                }
+                
+                requests.post(
+                    "https://sandbox.momodeveloper.mtn.com/collection/v1_0/requesttopay",
+                    headers=headers,
+                    json=payload
+                )
+            else:
+                # DEV MODE: No keys, simulate successful hold
+                payment.status = "held"
+                payment.save()
+                
+        except Exception as e:
+            payment.status = "failed"
+            payment.save()
 
 
 @api_view(["POST"])

@@ -13,9 +13,10 @@ export const ENDPOINTS = {
   me:             "/accounts/me/",
 
   // ── Listings ─────────────────────────────────────────────────────
-  listings:       "/listings/",
-  listing:        (id: number | string) => `/listings/${id}/`,
-  plans:          "/listings/plans/",
+  listings:           "/listings/",
+  listing:            (id: number | string) => `/listings/${id}/`,
+  plans:              "/listings/plans/",
+  sellerDashboard:    "/listings/seller/dashboard/",
 
   // ── Orders ───────────────────────────────────────────────────────
   orders:         "/orders/",
