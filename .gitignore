@@ -129,3 +129,8 @@ backend/media/
 
 # Docker
 backend/.env
+
+implementation plan.md
+ONBOARDING.md
+walkthrough.md
+SRS.md
