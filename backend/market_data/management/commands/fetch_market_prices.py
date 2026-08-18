@@ -1,7 +1,9 @@
+# pyrefly: ignore [missing-import]
 from django.core.management.base import BaseCommand
 from market_data.models import ReferencePrice
 import requests
 import random
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 
 class Command(BaseCommand):

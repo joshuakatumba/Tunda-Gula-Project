@@ -36,11 +36,14 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         listing = serializer.validated_data.get("listing")
-        serializer.save(
+        order = serializer.save(
             buyer=self.request.user,
             seller=listing.seller,
             order_type="order",
         )
+        
+        from notifications.sms import send_sms
+        send_sms(order.seller.phone, f"New Order: {order.quantity} {listing.unit} of {listing.name} ordered by {order.buyer.name}.")
 
     @action(detail=True, methods=["post"])
     def accept(self, request, pk=None):
@@ -52,6 +55,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.status = "accepted"
         order.accepted_at = timezone.now()
         order.save()
+        
+        from notifications.sms import send_sms
+        send_sms(order.buyer.phone, f"Your order for {order.item_name} has been accepted by {order.seller.name}. They are preparing delivery.")
+        
         return Response(OrderSerializer(order).data)
 
     @action(detail=True, methods=["post"])
@@ -62,6 +69,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.status = "delivered"
         order.delivered_at = timezone.now()
         order.save()
+        
+        from notifications.sms import send_sms
+        send_sms(order.buyer.phone, f"Your order for {order.item_name} has been delivered! Please confirm receipt in the app.")
+        
         return Response(OrderSerializer(order).data)
 
     @action(detail=True, methods=["post"])

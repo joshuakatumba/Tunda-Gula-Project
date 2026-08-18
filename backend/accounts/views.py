@@ -53,29 +53,14 @@ def request_otp(request):
     from datetime import timedelta
     from .models import OTP
     from django.conf import settings
-    import africastalking
+    from notifications.sms import send_sms
 
     code = str(random.randint(100000, 999999))
+    message = f"Your Tunda Gula verification code is {code}. It expires in 10 minutes."
+    
+    send_sms(phone, message)
 
-    # Initialize Africa's Talking
-    africastalking.initialize(settings.AT_USERNAME, settings.AT_API_KEY)
-    sms = africastalking.SMS
-
-    try:
-        if settings.AT_API_KEY:
-            # Send SMS
-            message = f"Your Tunda Gula verification code is {code}. It expires in 10 minutes."
-            response = sms.send(message, [phone])
-            print("SMS Response:", response)
-        else:
-            print(f"DEV MODE: SMS sending skipped. Code is {code}")
-            
-    except Exception as e:
-        print(f"Encountered an error while sending SMS: {e}")
-        return Response(
-            {"error": "Failed to send SMS. Please try again later."},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
+    # Fallback response message (handled by sms.py internally)
 
     OTP.objects.create(
         phone=phone,
@@ -154,7 +139,10 @@ def approve_seller(request, pk):
         user.is_verified = True
         user.verified_at = timezone.now()
         user.save()
-        # TODO: Send SMS notification
+        
+        from notifications.sms import send_sms
+        send_sms(user.phone, "Your TundaGula account is verified. You can start listing produce today.")
+        
         return Response({"message": f"{user.name} approved"})
     except User.DoesNotExist:
         return Response({"error": "Seller not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -169,7 +157,10 @@ def reject_seller(request, pk):
         user = User.objects.get(pk=pk, role="seller")
         user.rejection_reason = reason
         user.save()
-        # TODO: Send SMS with rejection reason
+        
+        from notifications.sms import send_sms
+        send_sms(user.phone, f"Verification not approved: {reason}. Reply HELP or visit an agent to fix it.")
+        
         return Response({"message": f"{user.name} rejected"})
     except User.DoesNotExist:
         return Response({"error": "Seller not found"}, status=status.HTTP_404_NOT_FOUND)

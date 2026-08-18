@@ -1,5 +1,8 @@
+# pyrefly: ignore [missing-import]
 from rest_framework import viewsets, permissions, status
+# pyrefly: ignore [missing-import]
 from rest_framework.decorators import action
+# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
 from .models import Dispute
 from .serializers import DisputeSerializer
@@ -38,6 +41,7 @@ class DisputeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+    
         from django.utils import timezone
         dispute.status = "resolved"
         dispute.resolution = resolution
@@ -45,5 +49,9 @@ class DisputeViewSet(viewsets.ModelViewSet):
         dispute.resolved_at = timezone.now()
         dispute.save()
 
-        # TODO: Send SMS to both buyer and seller with the decision
+        from notifications.sms import send_sms
+        message = f"Dispute for {dispute.order.item_name} resolved: {resolution}"
+        send_sms(dispute.order.buyer.phone, message)
+        send_sms(dispute.order.seller.phone, message)
+        
         return Response(DisputeSerializer(dispute).data)
