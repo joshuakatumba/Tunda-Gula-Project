@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ugx, typeLabel } from "../utils/helpers";
+import { ugx } from "../utils/helpers";
 import { Head } from "../components/Head";
 import { Badge } from "../components/Badge";
 import { Stat } from "../components/Stat";
@@ -24,10 +24,9 @@ export default function SellerHome({ session, mine, myOrders, gross, commission,
   useEffect(() => {
     api.get<DashStats>(ENDPOINTS.sellerDashboard)
       .then(setStats)
-      .catch(() => { /* fall back to props if API fails */ });
+      .catch(() => { /* fall back to props */ });
   }, []);
 
-  // Use live API stats when available, otherwise fall back to props
   const activeCount = stats?.active_listings ?? mine.filter(l => l.qty > 0).length;
   const totalListings = stats?.total_listings ?? mine.length;
   const ordersCount = stats?.orders_this_month ?? myOrders.length;
@@ -38,40 +37,60 @@ export default function SellerHome({ session, mine, myOrders, gross, commission,
 
   return (
     <>
-      <Head eyebrow={typeLabel(session.type)} title={`Good morning, ${session.name.split(" ")[0]}`}
-        lede="What you have listed, what you have sold, and what you are owed."
-        reqs={["REQ-005", "REQ-011", "REQ-018", "REQ-039"]} />
-      <div className="row" style={{ marginBottom: 14 }}>
-        <Badge tone="b-green">{stats?.is_verified ? "Verified farmer" : "Pending verification"}</Badge>
+      <Head title="Seller Overview" />
+
+      <div className="row" style={{ marginBottom: 20, gap: 8 }}>
+        <Badge tone={stats?.is_verified ? "b-green" : "default"}>
+          {stats?.is_verified ? "Verified farmer" : "Pending verification"}
+        </Badge>
         {activeCount > 0 && <Badge tone="b-maize">Active seller</Badge>}
-        <span className="hint">ID verified · phone verified · farm pinned in {stats?.district ?? session.district ?? "Wakiso"}</span>
       </div>
+
       <div className="grid g4">
         <Stat label="Active listings" value={activeCount} sub={`${totalListings} total`} />
-        <Stat label="Orders this month" value={ordersCount} sub={`${pendingCount} waiting on you`} />
-        <Stat label="Earned (gross)" value={ugx(grossRevenue)} sub={`less ${commission}% commission`} />
-        <Stat label="Your rating" value={avgRating} sub={`${ratingCount} buyer ratings`} />
+        <Stat label="Orders this month" value={ordersCount} sub={`${pendingCount} pending`} />
+        <Stat label="Earned (gross)" value={ugx(grossRevenue)} sub={`${commission}% commission`} />
+        <Stat label="Rating" value={avgRating} sub={`${ratingCount} reviews`} />
       </div>
-      <div className="grid g2" style={{ marginTop: 12 }}>
+
+      <div className="grid g2" style={{ marginTop: 20 }}>
         <div className="card">
-          <h2>Needs your attention</h2>
-          <div className="stack" style={{ marginTop: 12 }}>
-            {myOrders.filter(o => o.status !== "delivered").map(o => (
-              <div key={o.id} className="between" style={{ borderBottom: "1px solid #DDE6D2", paddingBottom: 10 }}>
-                <div><div className="mono" style={{ fontSize: 12 }}>{o.id}</div>
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>{o.qty} {o.unit} {o.item}</div>
-                  <div className="hint">{o.buyer}</div></div>
-                {o.type === "order" && <button className="btn-sm" onClick={() => advance(o)}>
-                  {o.status === "accepted" ? "Start delivery" : "Mark delivered"}</button>}
-              </div>
-            ))}
+          <h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 16px", color: "var(--color-obsidian)" }}>
+            Pending orders
+          </h2>
+          <div className="stack" style={{ gap: "12px" }}>
+            {myOrders.filter(o => o.status !== "delivered").length === 0 ? (
+              <div style={{ fontSize: "14px", color: "var(--color-slate)" }}>No orders waiting for action.</div>
+            ) : (
+              myOrders.filter(o => o.status !== "delivered").map(o => (
+                <div key={o.id} className="between" style={{ borderBottom: "1px solid var(--color-fog)", paddingBottom: "12px", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontFamily: "var(--font-monospace)", fontSize: "12px", color: "var(--color-charcoal)" }}>{o.id}</div>
+                    <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-obsidian)", marginTop: "2px" }}>{o.qty} {o.unit} {o.item}</div>
+                    <div style={{ fontSize: "13px", color: "var(--color-slate)" }}>{o.buyer}</div>
+                  </div>
+                  {o.type === "order" && (
+                    <button className="btn-sm" onClick={() => advance(o)}>
+                      {o.status === "accepted" ? "Start delivery" : "Mark delivered"}
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
+
         <div className="card">
-          <h2>Messages sent for you</h2>
-          <p className="hint" style={{ marginTop: 4 }}>TundaGula sends these automatically. They cost you no airtime.</p>
-          <div className="stack" style={{ marginTop: 12 }}>
-            {sms.slice(0, 4).map((m, i) => <div className="sms" key={i}><strong style={{ fontSize: 11 }}>{m.to}</strong><div style={{ marginTop: 3 }}>{m.text}</div></div>)}
+          <h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 16px", color: "var(--color-obsidian)" }}>
+            Automated SMS notifications
+          </h2>
+          <div className="stack" style={{ gap: "10px" }}>
+            {sms.slice(0, 4).map((m, i) => (
+              <div className="sms" key={i}>
+                <strong style={{ fontSize: "12px", display: "block", color: "var(--color-forest-ink)" }}>{m.to}</strong>
+                <div style={{ marginTop: "4px", fontSize: "13px" }}>{m.text}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

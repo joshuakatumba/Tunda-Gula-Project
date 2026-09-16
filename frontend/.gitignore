@@ -129,3 +129,7 @@ backend/media/
 
 # Docker
 backend/.env
+
+
+.env
+.env.example

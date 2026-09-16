@@ -48,8 +48,10 @@ services:
     env_file: .env
     # The entrypoint in backend/Dockerfile handles migrations & superuser
     ports:
+      - "8000:8000"
       - "8001:8000"
     volumes:
+      - ./backend:/app
       - media_data:/app/media
       - static_data:/app/staticfiles
     depends_on:

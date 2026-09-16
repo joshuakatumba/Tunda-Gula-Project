@@ -9,8 +9,11 @@ Maps to the frontend's Auth.tsx registration flow:
   - Seller verification: NIN, phone, GPS
 """
 
+# pyrefly: ignore [missing-import]
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+# pyrefly: ignore [missing-import]
 from django.db import models
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
 
 
@@ -100,26 +103,78 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f"{self.name} ({self.get_role_display()})"
 
+    @property
+    def is_buyer(self):
+        return self.role == self.Role.BUYER
+
+    @property
+    def is_farmer(self):
+        return self.role == self.Role.SELLER
+
+    @property
+    def is_staff_member(self):
+        return self.role == self.Role.ADMIN or self.is_staff
+
+
+import hashlib
+import secrets
+
 
 class OTP(models.Model):
     """
     One-time password for phone verification.
-    Frontend: Auth.tsx → "Send me a code" → 6-digit OTP input.
     """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        VERIFIED = "verified", "Verified"
+        FAILED = "failed", "Failed"
+        EXPIRED = "expired", "Expired"
+        REVOKED = "revoked", "Revoked"
 
     phone = models.CharField(max_length=20, db_index=True)
     code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
+
+    # Auxiliary tracking fields
+    code_hash = models.CharField(max_length=64, blank=True, default="")
+    salt = models.CharField(max_length=32, blank=True, default="")
+    verified_at = models.DateTimeField(null=True, blank=True)
     is_used = models.BooleanField(default=False)
+    attempts = models.IntegerField(default=0)
+    ip_address = models.CharField(max_length=45, blank=True, default="")
+    user_agent = models.CharField(max_length=255, blank=True, default="")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 
     class Meta:
         db_table = "tg_otps"
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"OTP {self.code} → {self.phone}"
+        return f"OTP({self.status}) → {self.phone}"
 
     @property
     def is_expired(self):
         return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self):
+        return (
+            not self.is_used
+            and not self.is_expired
+            and self.attempts < 5
+            and self.status == self.Status.PENDING
+        )
+
+    def check_code(self, submitted_code):
+        """Constant-time verification of submitted code."""
+        if not submitted_code:
+            return False
+        submitted_str = str(submitted_code).strip()
+        if self.code:
+            return secrets.compare_digest(self.code, submitted_str)
+        if self.code_hash and self.salt:
+            computed_hash = hashlib.sha256((submitted_str + self.salt).encode()).hexdigest()
+            return secrets.compare_digest(self.code_hash, computed_hash)
+        return False

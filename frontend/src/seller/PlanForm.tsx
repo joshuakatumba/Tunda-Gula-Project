@@ -3,6 +3,8 @@ import { Loader2 } from "lucide-react";
 import { CATEGORIES } from "../data/categories";
 import { Modal } from "../components/Modal";
 import { Field } from "../components/Field";
+import { Button } from "../components/ui/Button";
+import { Select } from "../components/ui/Select";
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
 
@@ -26,7 +28,7 @@ export default function PlanForm({ onClose, onSave }) {
         deposit_percentage: d.deposit,
       };
       const result = await api.post(ENDPOINTS.plans, payload);
-      onSave(result); // Instant UI update
+      onSave(result);
       onClose();
     } catch (err: any) {
       const data = err.data;
@@ -42,25 +44,69 @@ export default function PlanForm({ onClose, onSave }) {
   };
 
   return (
-    <Modal title="Add a harvest plan" onClose={onClose}>
-      {error && <div className="sms" style={{ color: "#A3320B", background: "#FFF0EC" }}>{error}</div>}
-      <Field label="Crop"><input value={d.name} placeholder="Green peppers" onChange={e => setD({ ...d, name: e.target.value })} /></Field>
-      <Field label="Category"><select value={d.cat} onChange={e => setD({ ...d, cat: e.target.value })}>{CATEGORIES.map(c => <option key={c}>{c}</option>)}</select></Field>
+    <Modal title="New harvest plan" onClose={onClose}>
+      {error && (
+        <div style={{ color: "var(--color-alarm-red)", background: "#FCE8E8", padding: "12px 16px", borderRadius: "var(--radius-cards)", fontSize: "13px" }}>
+          {error}
+        </div>
+      )}
+      <Field label="Crop name">
+        <input value={d.name} placeholder="e.g. Green peppers" onChange={e => setD({ ...d, name: e.target.value })} />
+      </Field>
+      <Field label="Category">
+        <Select
+          value={d.cat}
+          onChange={val => setD({ ...d, cat: val })}
+          options={CATEGORIES}
+          grid={true}
+        />
+      </Field>
       <div className="grid g2">
-        <Field label="Date planted"><input type="date" value={d.planted} onChange={e => setD({ ...d, planted: e.target.value })} /></Field>
-        <Field label="Expected harvest"><input type="date" value={d.harvest} onChange={e => setD({ ...d, harvest: e.target.value })} /></Field>
+        <Field label="Date planted">
+          <input type="date" value={d.planted} onChange={e => setD({ ...d, planted: e.target.value })} />
+        </Field>
+        <Field label="Expected harvest">
+          <input type="date" value={d.harvest} onChange={e => setD({ ...d, harvest: e.target.value })} />
+        </Field>
       </div>
       <div className="grid g3">
-        <Field label="Expected quantity"><input type="number" value={d.qty} onChange={e => setD({ ...d, qty: Number(e.target.value) })} /></Field>
-        <Field label="Unit"><select value={d.unit} onChange={e => setD({ ...d, unit: e.target.value })}>{["kg", "bunch", "bag"].map(u => <option key={u}>{u}</option>)}</select></Field>
-        <Field label="Price per unit (UGX)"><input type="number" value={d.price} onChange={e => setD({ ...d, price: Number(e.target.value) })} /></Field>
+        <Field label="Expected quantity">
+          <input type="number" value={d.qty} onChange={e => setD({ ...d, qty: Number(e.target.value) })} />
+        </Field>
+        <Field label="Unit">
+          <Select
+            value={d.unit}
+            onChange={val => setD({ ...d, unit: val })}
+            options={["kg", "bunch", "bag", "head", "tray"]}
+            grid={false}
+          />
+        </Field>
+        <Field label="Price per unit (UGX)">
+          <input type="number" value={d.price} onChange={e => setD({ ...d, price: Number(e.target.value) })} />
+        </Field>
       </div>
-      <Field label="Deposit buyers must pay">
-        <select value={d.deposit} onChange={e => setD({ ...d, deposit: Number(e.target.value) })}>{[20, 25, 30, 40, 50].map(p => <option key={p} value={p}>{p}%</option>)}</select>
+      <Field label="Required deposit percentage">
+        <Select
+          value={String(d.deposit)}
+          onChange={val => setD({ ...d, deposit: Number(val) })}
+          options={[
+            { value: "20", label: "20%" },
+            { value: "25", label: "25%" },
+            { value: "30", label: "30%" },
+            { value: "40", label: "40%" },
+            { value: "50", label: "50%" },
+          ]}
+          grid={true}
+        />
       </Field>
-      <button className="btn-maize" disabled={!d.name || busy} onClick={handleSave}>
-        {busy ? <Loader2 size="1em" className="spin" /> : "Post harvest plan"}
-      </button>
+      <Button
+        variant="primary"
+        style={{ width: "100%", marginTop: "8px" }}
+        disabled={!d.name || busy}
+        onClick={handleSave}
+      >
+        {busy ? <Loader2 size={16} className="spin" /> : "Save harvest plan"}
+      </Button>
     </Modal>
   );
 }

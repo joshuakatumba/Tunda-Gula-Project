@@ -32,10 +32,10 @@ export default function BuyerApp(props) {
 
   const pay = async (provider) => {
     try {
-      // Try to create orders via API
+      // Try to create orders via API and initiate payment
       for (const c of cart) {
         const listingId = c.id.replace("L-", "");
-        await api.post(ENDPOINTS.orders, {
+        const res = await api.post(ENDPOINTS.orders, {
           listing: Number(listingId) || undefined,
           item_name: c.name,
           quantity: c.qty,
@@ -43,10 +43,15 @@ export default function BuyerApp(props) {
           price_per_unit: c.price,
           delivery_mode: "Motorcycle",
         });
+
+        await api.post(ENDPOINTS.initiate, {
+          order: res.id,
+          provider: provider,
+          phone: session.phone,
+          amount: c.qty * c.price,
+        });
       }
 
-      // Initiate payment
-      // TODO: Real payment integration
       say(`Paid ${ugx(cartTotal)} with ${provider} Mobile Money`);
       setCart([]);
       setCheckout(false);
@@ -73,13 +78,21 @@ export default function BuyerApp(props) {
   const placePreorder = async (plan, qty, provider) => {
     try {
       const planId = plan.id.replace("H-", "");
-      await api.post(ENDPOINTS.preorder, {
+      const res = await api.post(ENDPOINTS.preorder, {
         harvest_plan: Number(planId) || undefined,
         item_name: `${plan.name} (harvest ${dshort(plan.harvest)})`,
         quantity: qty,
         unit: plan.unit,
         price_per_unit: plan.price,
         deposit_percentage: plan.deposit,
+      });
+
+      const depositAmount = Math.round((qty * plan.price * plan.deposit) / 100);
+      await api.post(ENDPOINTS.initiate, {
+        order: res.id,
+        provider: provider,
+        phone: session.phone,
+        amount: depositAmount,
       });
       setPreordering(null);
       say(`Deposit paid · ${qty} ${plan.unit} reserved`);

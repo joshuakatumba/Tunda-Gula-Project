@@ -157,7 +157,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # ---------------------------------------------------------------------------
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
+        "accounts.authentication.ExpiringTokenAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
@@ -166,6 +166,10 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
 }
+
+# Session token lifetime — tokens older than this are rejected (default: 7 days)
+from datetime import timedelta  # noqa: E402
+SESSION_TOKEN_LIFETIME = timedelta(days=7)
 
 
 # ---------------------------------------------------------------------------
@@ -202,10 +206,14 @@ AIRTEL_MONEY_API_KEY = os.environ.get("AIRTEL_MONEY_API_KEY", "")
 AIRTEL_MONEY_API_SECRET = os.environ.get("AIRTEL_MONEY_API_SECRET", "")
 
 # ---------------------------------------------------------------------------
-# SMS Gateway (Africa's Talking)
+# SMS Gateway (Africa's Talking & Twilio Programmable Messaging)
 # ---------------------------------------------------------------------------
-AT_API_KEY = os.environ.get("AT_API_KEY", "")
-AT_USERNAME = os.environ.get("AT_USERNAME", "sandbox")
+# AT_API_KEY = os.environ.get("AT_API_KEY", "")  # Disabled — using Twilio
+# AT_USERNAME = os.environ.get("AT_USERNAME", "sandbox")  # Disabled — using Twilio
+
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "")
+TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "")
 
 
 # ---------------------------------------------------------------------------

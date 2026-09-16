@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import "./styles/tundagula.css";
+import { GooeyToaster, gooeyToast } from "goey-toast";
 
 import { STR } from "./data/strings";
 import { SEED_LISTINGS, SEED_PLANS, SEED_ORDERS, SEED_PENDING, SEED_DISPUTES } from "./data/seedData";
@@ -16,6 +17,9 @@ import BuyerApp from "./buyer/BuyerApp";
 import SellerApp from "./seller/SellerApp";
 import AdminApp from "./admin/AdminApp";
 
+import { Button } from "./components/ui/Button";
+import { SegmentedControl } from "./components/ui/SegmentedControl";
+
 export default function App() {
   const { user, logout, loading: authLoading } = useAuth();
 
@@ -23,7 +27,7 @@ export default function App() {
   const [auth, setAuth] = useState(null);
   const [lang, setLang] = useState("en");
   const [tab, setTab] = useState("browse");
-  const [toast, setToast] = useState(null);
+
 
   // ── Data state (start with seed data, will be replaced by API calls) ──
   const [listings, setListings] = useState(SEED_LISTINGS);
@@ -39,7 +43,7 @@ export default function App() {
   ]);
 
   const t = STR[lang];
-  const say = (m) => { setToast(m); setTimeout(() => setToast(null), 2800); };
+  const say = (m: string) => { gooeyToast.success(m); };
   const pushSms = (to, text) => setSms(s => [{ to, text }, ...s].slice(0, 8));
 
   // ── Fetch data from API when user logs in ──
@@ -143,10 +147,11 @@ export default function App() {
     }
   }, [user, authLoading, fetchData]);
 
-  const signIn = () => {
+  const signIn = (u?: any) => {
     // Auth context already sets the user — just close the modal
     setAuth(null);
-    say(`Welcome, ${user?.name || "back"}`);
+    const displayName = u?.name || user?.name || "back";
+    say(`Welcome, ${displayName}`);
   };
 
   const signOut = () => {
@@ -185,32 +190,48 @@ export default function App() {
     <div className="tg">
       <header className="topbar">
         <div className="topbar-in">
-          <button onClick={() => setScreen(session ? "app" : "landing")} style={{ textAlign: "left" }}>
+          <button onClick={() => setScreen(session ? "app" : "landing")} style={{ textAlign: "left", padding: 0 }}>
             <div className="brand">Tunda<span>Gula</span></div>
             <div className="tagline">From farm, to you</div>
           </button>
 
           {screen === "landing" && (
-            <div className="row" style={{ gap: 18, marginLeft: 24 }}>
+            <div className="row" style={{ gap: 24, marginLeft: 32 }}>
               {[["how", t.how], ["who", t.who], ["prices", t.prices]].map(([id, label]) => (
-                <a key={id} href={"#" + id} className="link" style={{ fontSize: 13, textDecoration: "none", color: "var(--mute)" }}>{label}</a>
+                <a key={id} href={"#" + id} style={{ fontSize: 14, fontWeight: 500, color: "var(--color-fog)" }}>{label}</a>
               ))}
             </div>
           )}
 
-          <div className="row" style={{ marginLeft: "auto", gap: 10 }}>
-            <div className="lang">{["en", "lg", "sw"].map(l =>
-              <button key={l} className={lang === l ? "on" : ""} onClick={() => setLang(l)}>{l.toUpperCase()}</button>)}
+          <div className="row" style={{ marginLeft: "auto", gap: 16 }}>
+            <div className="lang" style={{ display: 'flex', gap: '4px' }}>{["en", "lg", "sw"].map(l =>
+              <button key={l} 
+                style={{ 
+                  padding: '6px 10px', 
+                  fontSize: '12px', 
+                  fontWeight: 600, 
+                  borderRadius: 'var(--radius-sm)', 
+                  border: '1px solid',
+                  borderColor: lang === l ? 'var(--color-lime-voltage)' : 'var(--color-slate)',
+                  color: lang === l ? 'var(--color-forest-ink)' : 'var(--color-fog)',
+                  background: lang === l ? 'var(--color-lime-voltage)' : 'transparent'
+                }}
+                onClick={() => setLang(l)}>{l.toUpperCase()}</button>)}
             </div>
             {session ? (
               <>
-                <div className="who"><b>{session.name}</b>{session.role === "admin" ? "Administrator" : typeLabel(session.type)}</div>
-                <button className="btn-alt btn-sm" onClick={signOut}>{t.logout}</button>
+                <div style={{ textAlign: 'right', lineHeight: 1.2 }}>
+                  <b style={{ display: 'block', fontSize: '14px', color: 'var(--color-paper)' }}>{session.name}</b>
+                  <span style={{ fontSize: '12px', color: 'var(--color-pebble)' }}>
+                    {session.role === "admin" ? "Administrator" : typeLabel(session.type)}
+                  </span>
+                </div>
+                <Button variant="outline" onClick={signOut}>{t.logout}</Button>
               </>
             ) : (
               <>
-                <button className="btn-alt btn-sm" onClick={() => setAuth({ mode: "login" })}>{t.login}</button>
-                <button className="btn-maize btn-sm" onClick={() => setAuth({ mode: "join" })}>{t.join}</button>
+                <Button variant="text" onClick={() => setAuth({ mode: "login" })} style={{ color: 'var(--color-paper)' }}>{t.login}</Button>
+                <Button variant="primary" onClick={() => setAuth({ mode: "join" })}>{t.join}</Button>
               </>
             )}
           </div>
@@ -222,12 +243,14 @@ export default function App() {
       {screen === "landing" && <Landing t={t} onJoin={(role) => setAuth({ mode: "join", role })} onLogin={() => setAuth({ mode: "login" })} />}
 
       {screen === "app" && session && (
-        <div className="shell">
-          <nav className="nav">
-            {NAV[session.role].map(([k, label]) => (
-              <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{label}</button>
-            ))}
-          </nav>
+        <div className="shell" style={{ marginTop: '40px' }}>
+          <div style={{ marginBottom: '32px' }}>
+            <SegmentedControl 
+              segments={NAV[session.role].map(([k, label]) => ({ id: k as string, label: label as string }))}
+              activeId={tab}
+              onChange={(id) => setTab(id)}
+            />
+          </div>
           {session.role === "buyer" && <BuyerApp tab={tab} {...ctx} />}
           {session.role === "seller" && <SellerApp tab={tab} {...ctx} />}
           {session.role === "admin" && <AdminApp tab={tab} {...ctx} />}
@@ -235,7 +258,7 @@ export default function App() {
       )}
 
       {auth && <Auth init={auth} onClose={() => setAuth(null)} onDone={signIn} say={say} />}
-      {toast && <div className="toast">{toast}</div>}
+      <GooeyToaster position="top-center" />
     </div>
   );
 }

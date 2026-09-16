@@ -4,18 +4,24 @@ import { CATEGORIES, EMOJI, TINT, CAT_EG } from "../data/categories";
 import { SELLER_TYPES, BUYER_TYPES } from "../data/userTypes";
 import { REF_PRICES } from "../data/refPrices";
 
-export default function Landing({ t, onJoin, onLogin }) {
+interface LandingProps {
+  t: Record<string, string>;
+  onJoin: (role: "seller" | "buyer" | "admin") => void;
+  onLogin: () => void;
+}
+
+export default function Landing({ t, onJoin, onLogin }: LandingProps) {
   return (
     <>
       <section className="hero">
         <div className="hero-in">
           <div>
-            <div className="eyebrow" style={{ color: "#94A3B8" }}>Uganda's open agricultural marketplace</div>
+
             <h1>One marketplace<br />for Uganda's <em>food</em>.</h1>
             <p>Farmers list what they grow. Buyers buy it straight from them. No line of middlemen in between, and the price everyone is working from is on the screen for both sides to see.</p>
-            <div className="hero-cta">
+            <div className="hero-cta" style={{ alignItems: "center" }}>
               <button className="btn-maize" onClick={() => onJoin("seller")}>I am selling produce</button>
-              <button className="btn-alt" style={{ borderColor: "rgba(255,255,255,0.4)", color: "#FFF" }} onClick={() => onJoin("buyer")}>I am buying produce</button>
+              <a href="#" style={{ textDecoration: "underline", color: "var(--color-forest-ink)", fontWeight: 500 }} onClick={(e) => { e.preventDefault(); onJoin("buyer"); }}>I am buying produce</a>
             </div>
             <div className="hero-stats">
               <div><span>1,240+</span><small>verified farmers</small></div>
@@ -36,7 +42,7 @@ export default function Landing({ t, onJoin, onLogin }) {
                 </div>
               </div>
             ))}
-            <div style={{ marginTop: 12, fontSize: 11, color: "#94A3B8", lineHeight: 1.5 }}>
+            <div style={{ marginTop: 12, fontSize: 11, color: "#7E9285", lineHeight: 1.5 }}>
               Reference prices from InfoTrade Connect and the WFP food price database, refreshed every week.
             </div>
           </div>
@@ -47,7 +53,7 @@ export default function Landing({ t, onJoin, onLogin }) {
       <section className="sec" id="about">
         <div className="shell" style={{ paddingBottom: 0 }}>
           <div className="sec-head">
-            <div className="eyebrow">What TundaGula is</div>
+
             <h2 style={{ fontSize: 27 }}>A farmer sells. A buyer buys. Nobody in between takes the difference.</h2>
             <p className="lede">
               For most food grown in Uganda, the person who grew it never meets the person who eats it. Traders in between
@@ -73,16 +79,15 @@ export default function Landing({ t, onJoin, onLogin }) {
       </section>
 
       {/* how it works */}
-      <section className="sec" id="how" style={{ background: "var(--leaf2)" }}>
-        <div className="shell">
-          <div className="sec-head"><div className="eyebrow">{t.how}</div><h2 style={{ fontSize: 25 }}>Four steps, in order</h2>
-            <p className="lede">Numbered because it really is a sequence — nothing moves to the next step until the one before it is done.</p></div>
-          <div className="grid g4" style={{ gap: 0, borderLeft: "1px solid var(--line)" }}>
-            {[["Register and get verified", "National ID checked against your phone registration. Farm pinned on the map. Takes under a day."],
-              ["List, or say it out loud", "Photos, quantity, price. If writing is hard, record a voice note instead."],
-              ["Buyer orders and pays", "MTN or Airtel Mobile Money. The money is held until the produce arrives."],
-              ["Deliver, confirm, get paid", "Buyer confirms receipt, payout lands on your mobile money, buyer rates you."]].map(([h, d], i) => (
-              <div className="card" style={{ borderLeft: 0, borderTop: 0, borderRadius: 0, boxShadow: "none" }} key={h}><div className="mono" style={{ color: "var(--murram)", fontSize: 11, marginBottom: 12, fontWeight: 700 }}>STEP {String(i + 1).padStart(2, "0")}</div><h3>{h}</h3><p className="lede" style={{ fontSize: 13, marginTop: 8 }}>{d}</p></div>
+      <section className="band" id="how">
+        <div className="shell" style={{ paddingTop: 52, paddingBottom: 52 }}>
+          <div className="sec-head"><h2 style={{ fontSize: 25 }}>How it works</h2></div>
+          <div className="steps">
+            {[["Register and get verified", "National ID checked against your phone registration. Farm pinned on the map."],
+              ["List produce", "Photos, quantity, and unit price. Voice recording option available."],
+              ["Order and deposit", "Mobile Money escrow locks your order until delivery."],
+              ["Deliver and get paid", "Confirmation releases payout immediately to mobile money."]].map(([h, d], i) => (
+              <div className="step" key={h}><div className="num">STEP {String(i + 1).padStart(2, "0")}</div><h3>{h}</h3><p>{d}</p></div>
             ))}
           </div>
         </div>
@@ -91,25 +96,24 @@ export default function Landing({ t, onJoin, onLogin }) {
       {/* who it's for */}
       <section className="sec" id="who">
         <div className="shell" style={{ paddingBottom: 0 }}>
-          <div className="sec-head"><div className="eyebrow">{t.who}</div><h2 style={{ fontSize: 25 }}>Pick the door that fits you</h2>
-            <p className="lede">Each account type gets its own tools. You choose the type when you register — it decides what your dashboard does.</p></div>
+          <div className="sec-head"><h2 style={{ fontSize: 25 }}>Account types</h2></div>
           <div className="grid g2">
             <div className="door">
               <span className="ic"><Sprout size="1em" /></span>
-              <div><h3>Sellers</h3><p className="lede" style={{ fontSize: 13 }}>You grow it or you gather it. You list, price it, and deliver.</p></div>
+              <div><h3>Sellers</h3></div>
               <ul>{SELLER_TYPES.map(s => <li key={s.id}>{s.t}</li>)}</ul>
               <button className="btn" onClick={() => onJoin("seller")}>Register as a seller</button>
             </div>
             <div className="door">
               <span className="ic"><ShoppingBasket size="1em" /></span>
-              <div><h3>Buyers</h3><p className="lede" style={{ fontSize: 13 }}>You need food, in a small basket or by the truck.</p></div>
+              <div><h3>Buyers</h3></div>
               <ul>{BUYER_TYPES.map(s => <li key={s.id}>{s.t}</li>)}</ul>
               <button className="btn" onClick={() => onJoin("buyer")}>Register as a buyer</button>
             </div>
           </div>
-          <div className="card" style={{ marginTop: 20 }}>
-            <div className="between">
-              <div><h3>TundaGula staff</h3><p className="lede" style={{ fontSize: 13, marginTop: 5 }}>Verification, disputes, account management and platform reporting.</p></div>
+          <div className="card" style={{ marginTop: 16 }}>
+            <div className="between" style={{ alignItems: "center" }}>
+              <div><h3 style={{ margin: 0 }}>Platform Administration</h3></div>
               <button className="btn-alt" onClick={onLogin}>Staff log in</button>
             </div>
           </div>
@@ -117,15 +121,15 @@ export default function Landing({ t, onJoin, onLogin }) {
       </section>
 
       {/* categories */}
-      <section className="sec" id="prices" style={{ background: "var(--leaf2)" }}>
-        <div className="shell">
-          <div className="sec-head"><div className="eyebrow">On the market</div><h2 style={{ fontSize: 25 }}>What is traded here</h2></div>
+      <section className="band" id="prices">
+        <div className="shell" style={{ paddingTop: 52, paddingBottom: 52 }}>
+          <div className="sec-head"><h2 style={{ fontSize: 25 }}>What is traded here</h2></div>
           <div className="grid g5">
             {CATEGORIES.map(c => (
-              <div className="card" key={c} style={{ background: `linear-gradient(to bottom right, #FFF, ${TINT[c]}40)` }}>
-                <div style={{ fontSize: 32 }}>{EMOJI[c]}</div>
-                <h3 style={{ marginTop: 12 }}>{c}</h3>
-                <p className="hint" style={{ marginTop: 6, lineHeight: 1.5 }}>{CAT_EG[c]}</p>
+              <div className="card" key={c} style={{ background: TINT[c as keyof typeof TINT], borderColor: "#C9D4BE" }}>
+                <div style={{ fontSize: 26 }}>{EMOJI[c as keyof typeof EMOJI]}</div>
+                <h3 style={{ marginTop: 8 }}>{c}</h3>
+
               </div>
             ))}
           </div>
@@ -134,11 +138,11 @@ export default function Landing({ t, onJoin, onLogin }) {
 
       <section className="sec">
         <div className="shell" style={{ textAlign: "center", paddingBottom: 0 }}>
-          <h2 style={{ fontSize: 36 }}>Ready to sell what you grew?</h2>
-          <p className="lede" style={{ margin: "16px auto 32px" }}>Registration needs your national ID, the phone number it is registered on, and your farm location. Nothing else.</p>
-          <div className="row" style={{ justifyContent: "center" }}>
+          <h2 style={{ fontSize: 30 }}>Ready to sell what you grew?</h2>
+
+          <div className="row" style={{ justifyContent: "center", alignItems: "center" }}>
             <button className="btn-maize" onClick={() => onJoin("seller")}>Start selling</button>
-            <button className="btn-alt" onClick={() => onJoin("buyer")}>Start buying</button>
+            <a href="#" style={{ textDecoration: "underline", color: "var(--color-forest-ink)", fontWeight: 500 }} onClick={(e) => { e.preventDefault(); onJoin("buyer"); }}>Start buying</a>
           </div>
         </div>
       </section>
@@ -146,21 +150,21 @@ export default function Landing({ t, onJoin, onLogin }) {
       <footer className="foot">
         <div className="foot-in">
           <div>
-            <div className="brand" style={{ color: "#FFF" }}>Tunda<span>Gula</span></div>
-            <div style={{ marginTop: 12, maxWidth: "38ch", lineHeight: 1.6 }}>Uganda's open agricultural marketplace. Kampala and the Central region, expanding.</div>
+            <div className="brand" style={{ color: "#F3F6EE" }}>Tunda<span>Gula</span></div>
+            <div style={{ marginTop: 8, maxWidth: "38ch", lineHeight: 1.6 }}>Uganda's open agricultural marketplace. Kampala and the Central region, expanding.</div>
           </div>
-          <div style={{ lineHeight: 2 }}>
-            <div style={{ color: "#FFF", fontWeight: 700, marginBottom: 8 }}>Platform</div>
+          <div style={{ lineHeight: 1.9 }}>
+            <div style={{ color: "#F3F6EE", fontWeight: 600, marginBottom: 4 }}>Platform</div>
             How it works<br />Produce categories<br />Market prices<br />Farmer guide
           </div>
-          <div style={{ lineHeight: 2 }}>
-            <div style={{ color: "#FFF", fontWeight: 700, marginBottom: 8 }}>Legal</div>
-            Terms of service<br />Privacy policy<br />Data Protection Act, 2019<br />Complaints
+          <div style={{ lineHeight: 1.9 }}>
+            <div style={{ color: "#F3F6EE", fontWeight: 600, marginBottom: 4 }}>Legal</div>
+            Terms of service<br />Privacy policy<br />Data Protection and Privacy Act, 2019<br />Complaints
           </div>
         </div>
-        <div className="foot-in" style={{ marginTop: 32, paddingTop: 24, borderTop: "1px solid rgba(255,255,255,0.1)", fontSize: 12 }}>
-          <span>© 2026 TundaGula Limited.</span>
-          <span className="mono" style={{ color: "var(--mute)" }}>English · Luganda · Swahili</span>
+        <div className="foot-in" style={{ marginTop: 22, paddingTop: 16, borderTop: "1px solid #2C3F35", fontSize: 11 }}>
+          <span>© 2026 TundaGula Limited. Prototype built to SRS v1.0.</span>
+          <span className="mono">English · Luganda · Swahili</span>
         </div>
       </footer>
     </>

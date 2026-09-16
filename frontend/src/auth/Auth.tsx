@@ -5,6 +5,9 @@ import { Modal } from "../components/Modal";
 import { Field } from "../components/Field";
 import { Pick } from "../components/Pick";
 import { useAuth } from "../context/AuthContext";
+import { Button } from "../components/ui/Button";
+import { Typography } from "../components/ui/Typography";
+import { Select } from "../components/ui/Select";
 
 /** Normalise a Ugandan phone number to +256XXXXXXXXX format */
 function formatPhone(phone: string): string {
@@ -26,6 +29,7 @@ export default function Auth({ init, onClose, onDone, say }) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [gps, setGps] = useState(null);
   const [manual, setManual] = useState("");
+  const [verificationToken, setVerificationToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -53,11 +57,14 @@ export default function Auth({ init, onClose, onDone, say }) {
       const res = await verifyOtp(formatPhone(d.phone), otp.join(""));
       if (res.token && res.user) {
         // Existing user — logged in
-        onDone();
+        onDone(res.user);
       } else if (res.verified) {
         // Phone verified but no account — proceed to registration
+        if (res.verification_token) {
+          setVerificationToken(res.verification_token);
+        }
         if (mode === "login") {
-          setError("No account found with this number. Register instead.");
+          setError("No account found with this number. Complete registration below.");
           setMode("join");
           setStep("role");
         }
@@ -70,14 +77,16 @@ export default function Auth({ init, onClose, onDone, say }) {
   };
 
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const handleRegister = async () => {
+  const handleRegister = async (tokenOverride?: string) => {
     setBusy(true);
     setError("");
+    const token = tokenOverride || verificationToken;
     try {
       await register({
         phone: formatPhone(d.phone),
         name: d.name,
         role,
+        ...(token ? { verification_token: token } : {}),
         ...(role === "seller" ? {
           seller_type: type,
           nin: d.nin,
@@ -111,12 +120,11 @@ export default function Auth({ init, onClose, onDone, say }) {
   if (mode === "login") {
     return (
       <Modal title="Log in" onClose={onClose}>
-        <p className="hint">Your phone number is your account. We send a one-time code to it — there is no password to forget.</p>
         {error && <div className="sms" style={{ color: "#A3320B", background: "#FFF0EC" }}>{error}</div>}
         <Field label="Phone number"><input placeholder="0772 000 000" value={d.phone} onChange={e => setD({ ...d, phone: e.target.value })} /></Field>
         {step === "otp" ? (
           <>
-            <Field label="Enter the 6-digit code" hint="Check your phone for the code. It expires after 10 minutes.">
+            <Field label="Enter the 6-digit code">
               <div className="otp">
                 {otp.map((v, i) => (
                   <input key={i} maxLength={1} value={v} inputMode="numeric"
@@ -125,18 +133,18 @@ export default function Auth({ init, onClose, onDone, say }) {
                 ))}
               </div>
             </Field>
-            <button className="btn-maize" disabled={!otpOk || busy} onClick={handleVerifyOtp}>
+            <Button variant="primary" disabled={!otpOk || busy} onClick={handleVerifyOtp}>
               {busy ? <Loader2 size="1em" className="spin" /> : "Verify and log in"}
-            </button>
+            </Button>
           </>
         ) : (
-          <button className="btn-maize" disabled={!d.phone || busy} onClick={handleRequestOtp}>
+          <Button variant="primary" disabled={!d.phone || busy} onClick={handleRequestOtp}>
             {busy ? <Loader2 size="1em" className="spin" /> : "Send me a code"}
-          </button>
+          </Button>
         )}
         <div className="rule" />
         <div className="row"><span className="hint">No account yet?</span>
-          <button className="link" onClick={() => { setMode("join"); setStep("role"); setError(""); }}>Register instead</button></div>
+          <Button variant="text" onClick={() => { setMode("join"); setStep("role"); setError(""); }}>Register instead</Button></div>
       </Modal>
     );
   }
@@ -148,28 +156,28 @@ export default function Auth({ init, onClose, onDone, say }) {
 
   return (
     <Modal title={role ? `Register as a ${role}` : "Join TundaGula"} onClose={onClose}>
-      {role && <div className="hint mono">Step {stepNo - 1} of {total - 1}</div>}
+
       {error && <div className="sms" style={{ color: "#A3320B", background: "#FFF0EC" }}>{error}</div>}
 
       {step === "role" && (
         <>
-          <p className="hint">What brings you here?</p>
+
           <div className="stack">
             <Pick on={false} ic={<Sprout size="1em" />} t="I am selling produce" d="Farmers, cooperatives, aggregators." onClick={() => { setRole("seller"); setStep("type"); }} />
             <Pick on={false} ic={<ShoppingBasket size="1em" />} t="I am buying produce" d="Households, restaurants, retailers, institutions." onClick={() => { setRole("buyer"); setStep("type"); }} />
             <Pick on={false} ic={<Shield size="1em" />} t="I am TundaGula staff" d="Administrator access." onClick={() => { setRole("admin"); setStep("details"); }} />
           </div>
-          <div className="row"><span className="hint">Already registered?</span><button className="link" onClick={() => { setMode("login"); setError(""); }}>Log in</button></div>
+          <div className="row"><span className="hint">Already registered?</span><Button variant="text" onClick={() => { setMode("login"); setError(""); }}>Log in</Button></div>
         </>
       )}
 
       {step === "type" && (
         <>
-          <p className="hint">{role === "seller" ? "What kind of seller are you? This sets up your dashboard." : "What are you buying for? This tunes what we show you first."}</p>
+
           <div className="stack">
             {TYPES.map(x => <Pick key={x.id} on={type === x.id} ic={x.ic} t={x.t} d={x.d} onClick={() => setType(x.id)} />)}
           </div>
-          <button className="btn-maize" disabled={!type} onClick={() => setStep("details")}>Continue</button>
+          <Button variant="primary" disabled={!type} onClick={() => setStep("details")}>Continue</Button>
         </>
       )}
 
@@ -177,11 +185,11 @@ export default function Auth({ init, onClose, onDone, say }) {
         <>
           <Field label="Staff email"><input value={d.email} placeholder="name@tundagula.ug" onChange={e => setD({ ...d, email: e.target.value })} /></Field>
           <Field label="Phone number"><input value={d.phone} placeholder="0772 000 000" onChange={e => setD({ ...d, phone: e.target.value })} /></Field>
-          <Field label="Access code" hint="Issued by the platform owner. Admin accounts are never self-registered."><input type="password" placeholder="••••••" /></Field>
-          <button className="btn-maize" disabled={!d.email || !d.phone || busy} onClick={() => {
+          <Field label="Access code"><input type="password" placeholder="••••••" /></Field>
+          <Button variant="primary" disabled={!d.email || !d.phone || busy} onClick={() => {
             setD({ ...d, name: d.email.split("@")[0] });
             handleRequestOtp();
-          }}>{busy ? <Loader2 size="1em" className="spin" /> : "Send verification code"}</button>
+          }}>{busy ? <Loader2 size="1em" className="spin" /> : "Send verification code"}</Button>
         </>
       )}
 
@@ -191,26 +199,41 @@ export default function Auth({ init, onClose, onDone, say }) {
             <input value={d.name} placeholder={role === "seller" ? "David Ssemakula" : "Nakato Catering"} onChange={e => setD({ ...d, name: e.target.value })} />
           </Field>
           {role === "seller" && (
-            <Field label="National ID number (NIN)" hint="We check this name against the name your phone number is registered under.">
+            <Field label="National ID number (NIN)">
               <input value={d.nin} placeholder="CF9204119XKJ2E" onChange={e => setD({ ...d, nin: e.target.value.toUpperCase() })} />
             </Field>
           )}
-          <Field label="Mobile money number" hint="This is the number you will be paid on, and the number you log in with.">
+          <Field label="Mobile money number">
             <input value={d.phone} placeholder="0772 000 000" onChange={e => setD({ ...d, phone: e.target.value })} />
           </Field>
           <Field label="District">
-            <select value={d.district} onChange={e => setD({ ...d, district: e.target.value })}>{DISTRICTS.map(x => <option key={x}>{x}</option>)}</select>
+            <Select
+              value={d.district}
+              onChange={val => setD({ ...d, district: val })}
+              options={DISTRICTS}
+              grid={true}
+            />
           </Field>
-          <button className="btn-maize" disabled={!d.name || !d.phone || (role === "seller" && !d.nin) || busy} onClick={handleRequestOtp}>
-            {busy ? <Loader2 size="1em" className="spin" /> : "Send verification code"}
-          </button>
+          <Button variant="primary" disabled={!d.name || !d.phone || (role === "seller" && !d.nin) || busy} onClick={() => {
+            if (verificationToken) {
+              if (role === "seller") {
+                setStep("gps");
+              } else {
+                handleRegister();
+              }
+            } else {
+              handleRequestOtp();
+            }
+          }}>
+            {busy ? <Loader2 size="1em" className="spin" /> : (verificationToken ? "Continue" : "Send verification code")}
+          </Button>
         </>
       )}
 
       {step === "otp" && (
         <>
           <div style={{ textAlign: "center", fontSize: 30 }}><Smartphone size="1em" /></div>
-          <p className="hint" style={{ textAlign: "center" }}>We sent a 6-digit code to {formatPhone(d.phone)}. It expires in 10 minutes.</p>
+
           <div className="otp" style={{ justifyContent: "center" }}>
             {otp.map((v, i) => (
               <input key={i} maxLength={1} value={v} inputMode="numeric"
@@ -218,42 +241,50 @@ export default function Auth({ init, onClose, onDone, say }) {
                   if (e.target.value && e.target.nextSibling) (e.target.nextSibling as HTMLElement).focus(); }} />
             ))}
           </div>
-          <button className="link" style={{ alignSelf: "center" }} onClick={async () => {
-            await requestOtp(formatPhone(d.phone));
-            say("New code sent. You can request 3 codes per hour.");
-          }}>Send the code again</button>
-          <button className="btn-maize" disabled={!otpOk || busy} onClick={async () => {
+          <Button variant="text" style={{ alignSelf: "center" }} onClick={async () => {
+            setError("");
+            try {
+              await requestOtp(formatPhone(d.phone));
+              say("New code sent.");
+            } catch (err: any) {
+              setError(err.data?.error || err.message || "Failed to resend code");
+            }
+          }}>Send the code again</Button>
+          <Button variant="primary" disabled={!otpOk || busy} onClick={async () => {
             setBusy(true);
             setError("");
             try {
               const res = await verifyOtp(formatPhone(d.phone), otp.join(""));
               if (res.token && res.user) {
                 // Existing user logging in during registration flow
-                onDone();
+                onDone(res.user);
               } else if (res.verified) {
+                if (res.verification_token) {
+                  setVerificationToken(res.verification_token);
+                }
                 // Phone verified, now proceed to registration or GPS step
                 if (role === "seller") {
                   setStep("gps");
                 } else {
-                  await handleRegister();
+                  await handleRegister(res.verification_token);
                 }
               }
             } catch (err: any) {
-              setError(err.data?.error || "Invalid code");
+              setError(err.data?.error || err.message || "Invalid code");
             } finally {
               setBusy(false);
             }
           }}>
             {busy ? <Loader2 size="1em" className="spin" /> : "Verify my number"}
-          </button>
+          </Button>
         </>
       )}
 
       {step === "gps" && (
         <>
-          <p className="hint">Pin your farm. Buyers only ever see your district — never your exact coordinates.</p>
+
           <div className="map">{gps ? <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><MapPin size="1em" /> {gps}</span> : "Map view · tap below to pin"}</div>
-          <button className="btn-alt" style={{ borderColor: "#16261E", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => {
+          <Button variant="outline" style={{ display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => {
             navigator.geolocation?.getCurrentPosition(
               pos => {
                 const lat = pos.coords.latitude;
@@ -266,14 +297,14 @@ export default function Auth({ init, onClose, onDone, say }) {
               },
               { enableHighAccuracy: true, timeout: 10000 }
             );
-          }}><MapPin size="1em" /> Use my current location</button>
+          }}><MapPin size="1em" /> Use my current location</Button>
           <Field label="Or describe where the farm is" hint="Use this if location services are off or the signal is weak.">
             <input value={manual} placeholder="Kasangati, Gayaza road, 2 km past the trading centre" onChange={e => setManual(e.target.value)} />
           </Field>
           <div className="sms">Next: an administrator checks your ID against your phone registration. You will get an SMS with the result within 24 hours. You can look around the platform while you wait.</div>
-          <button className="btn-maize" disabled={(!gps && !manual) || busy} onClick={handleRegister}>
+          <Button variant="primary" disabled={(!gps && !manual) || busy} onClick={() => handleRegister()}>
             {busy ? <Loader2 size="1em" className="spin" /> : "Finish registration"}
-          </button>
+          </Button>
         </>
       )}
     </Modal>

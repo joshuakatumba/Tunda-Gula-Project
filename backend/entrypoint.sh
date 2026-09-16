@@ -6,10 +6,10 @@
 
 set -e
 
-echo "🌱 TundaGula Backend — Starting up..."
+echo "TundaGula Backend — Starting up..."
 
 # Wait for PostgreSQL to be ready
-echo "⏳ Waiting for database..."
+echo "Waiting for database..."
 while ! python -c "
 import os, socket
 host = os.environ.get('DB_HOST', 'db')
@@ -26,14 +26,14 @@ except Exception:
     echo "   Database not ready yet — retrying in 2s..."
     sleep 2
 done
-echo "✅ Database is ready"
+echo "Database is ready"
 
 # Run migrations
-echo "📦 Running migrations..."
+echo "Running migrations..."
 python manage.py migrate --noinput
 
 # Create superuser if it doesn't exist
-echo "👤 Checking superuser..."
+echo "Checking superuser..."
 python manage.py shell -c "
 from accounts.models import User
 phone = '${DJANGO_SUPERUSER_PHONE:-0700000000}'
@@ -44,16 +44,16 @@ if not User.objects.filter(phone=phone).exists():
         role='${DJANGO_SUPERUSER_ROLE:-admin}',
         password='${DJANGO_SUPERUSER_PASSWORD:-admin123}',
     )
-    print(f'  ✅ Superuser created: {phone}')
+    print(f'  Superuser created: {phone}')
 else:
-    print(f'  ℹ️  Superuser already exists: {phone}')
+    print(f'  Superuser already exists: {phone}')
 "
 
 # Collect static files
-echo "📁 Collecting static files..."
+echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear 2>/dev/null || true
 
-echo "🚀 Starting server..."
+echo "Starting server..."
 
 # Execute the CMD passed to docker (gunicorn by default)
 exec "$@"
