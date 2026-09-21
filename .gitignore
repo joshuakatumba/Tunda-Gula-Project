@@ -134,3 +134,5 @@ implementation plan.md
 ONBOARDING.md
 walkthrough.md
 SRS.md
+.env
+.env.example

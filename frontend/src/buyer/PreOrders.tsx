@@ -1,32 +1,61 @@
 import React from "react";
-import { EMOJI, TINT } from "../data/categories";
+import { EMOJI } from "../data/categories";
 import { ugx, dshort, daysTo } from "../utils/helpers";
 import { Head } from "../components/Head";
 import { Badge } from "../components/Badge";
+import { Button } from "../components/ui/Button";
 
 export default function PreOrders({ plans, t, onPreorder }) {
   return (
     <>
-      <Head eyebrow="Harvest planning" title="Reserve it before it is picked"
-        lede="Farmers post what is still in the ground. Pay a deposit, lock your quantity, and get an SMS three days before harvest."
-        reqs={["REQ-026", "REQ-027", "REQ-028", "REQ-030", "REQ-031"]} />
+      <Head title="Harvest Pre-orders" />
       <div className="grid g3">
         {plans.map(p => {
           const left = p.qty - p.reserved;
+          const pct = Math.min(100, Math.round((p.reserved / p.qty) * 100));
           return (
             <article className="listing" key={p.id}>
-              <div className="photo" style={{ background: TINT[p.cat] }}><span>{EMOJI[p.cat]}</span><Badge tone="b-maize">Pre-order available</Badge></div>
-              <div style={{ padding: 13, display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
-                <div><h3>{p.name}</h3><p className="hint" style={{ marginTop: 3 }}>{p.seller} · {p.district}</p></div>
-                <div className="mono" style={{ fontSize: 12 }}>Harvest {dshort(p.harvest)} · in {daysTo(p.harvest)} days</div>
-                <div className="price">{ugx(p.price)}<span className="hint"> / {p.unit}</span></div>
-                <div>
-                  <div className="bar"><i style={{ width: (p.reserved / p.qty) * 100 + "%" }} /></div>
-                  <div className="hint" style={{ marginTop: 4 }}>{p.reserved} of {p.qty} {p.unit} reserved · {left} left</div>
+              <div style={{ background: "var(--color-fog)", height: "130px", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", fontSize: 44 }}>
+                <span>{EMOJI[p.cat]}</span>
+                <div style={{ position: "absolute", top: "10px", right: "10px" }}>
+                  <Badge tone="b-maize">Pre-order</Badge>
                 </div>
-                <div className="hint">Deposit {p.deposit}% to reserve</div>
-                <button className="btn-maize" style={{ marginTop: "auto" }} disabled={left === 0} onClick={() => onPreorder(p)}>
-                  {left === 0 ? "Fully reserved" : t.preorder}</button>
+              </div>
+              <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 700, color: "var(--color-obsidian)" }}>{p.name}</h3>
+                  <div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "2px" }}>{p.seller} · {p.district}</div>
+                </div>
+                <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-forest-ink)" }}>
+                  Harvest {dshort(p.harvest)} · in {daysTo(p.harvest)} days
+                </div>
+                <div>
+                  <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-forest-ink)" }}>
+                    {ugx(p.price)}
+                    <span style={{ fontSize: "13px", fontWeight: 400, color: "var(--color-pebble)" }}> / {p.unit}</span>
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--color-slate)", marginTop: "2px" }}>
+                    Deposit {p.deposit}% required
+                  </div>
+                </div>
+                <div>
+                  <div style={{ height: "6px", backgroundColor: "var(--color-fog)", borderRadius: "var(--radius-full)", overflow: "hidden", marginBottom: "6px" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", backgroundColor: "var(--color-lime-voltage)" }} />
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--color-slate)" }}>
+                    {p.reserved} of {p.qty} {p.unit} reserved · {left} left
+                  </div>
+                </div>
+                <div style={{ marginTop: "auto", paddingTop: "8px" }}>
+                  <Button
+                    variant="primary"
+                    style={{ width: "100%" }}
+                    disabled={left === 0}
+                    onClick={() => onPreorder(p)}
+                  >
+                    {left === 0 ? "Fully reserved" : (t.preorder || "Reserve harvest")}
+                  </Button>
+                </div>
               </div>
             </article>
           );

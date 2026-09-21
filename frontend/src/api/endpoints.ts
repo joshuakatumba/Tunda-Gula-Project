@@ -12,10 +12,16 @@ export const ENDPOINTS = {
   verifyOtp:      "/accounts/otp/verify/",
   me:             "/accounts/me/",
 
+  // ── Session management ────────────────────────────────────────────
+  refreshToken:   "/accounts/token/refresh/",
+  logout:         "/accounts/logout/",
+  logoutAll:      "/accounts/logout-all/",
+
   // ── Listings ─────────────────────────────────────────────────────
   listings:           "/listings/",
   listing:            (id: number | string) => `/listings/${id}/`,
   plans:              "/listings/plans/",
+  plan:               (id: number | string) => `/listings/plans/${id}/`,
   sellerDashboard:    "/listings/seller/dashboard/",
 
   // ── Orders ───────────────────────────────────────────────────────

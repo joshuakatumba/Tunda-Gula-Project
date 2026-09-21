@@ -1,19 +1,60 @@
 import React, { useState } from "react";
 import { Modal } from "../components/Modal";
 import { Field } from "../components/Field";
+import { Button } from "../components/ui/Button";
 
 export default function RejectModal({ seller, onClose, onReject }) {
   const [reason, setReason] = useState("");
-  const presets = ["NIN name does not match the phone registration", "National ID could not be read",
-    "Farm location outside the launch area", "Duplicate account"];
+  const presets = [
+    "NIN name does not match phone registration",
+    "National ID unreadable",
+    "Farm location outside coverage zone",
+    "Duplicate account registration"
+  ];
+
   return (
-    <Modal title={`Reject ${seller.name}`} onClose={onClose}>
-      <p className="hint">A reason is required. It is sent to the farmer by SMS so they know how to fix it.</p>
-      <div className="stack">
-        {presets.map(p => <button key={p} className="btn-sm" style={{ textAlign: "left", borderColor: reason === p ? "#16261E" : "#C9D4BE" }} onClick={() => setReason(p)}>{p}</button>)}
-      </div>
-      <Field label="Or write your own"><textarea rows={2} value={reason} onChange={e => setReason(e.target.value)} /></Field>
-      <button className="btn" disabled={!reason} onClick={() => onReject(reason)}>Reject and send SMS</button>
+    <Modal title={`Reject application: ${seller.name}`} onClose={onClose}>
+      <Field label="Select rejection reason">
+        <div className="stack" style={{ gap: "8px" }}>
+          {presets.map(p => (
+            <button
+              key={p}
+              type="button"
+              className="btn-sm"
+              style={{
+                textAlign: "left",
+                justifyContent: "flex-start",
+                padding: "10px 14px",
+                borderColor: reason === p ? "var(--color-forest-ink)" : "var(--color-pebble)",
+                background: reason === p ? "var(--color-linen-mist)" : "var(--color-paper)",
+                color: "var(--color-forest-ink)",
+                fontWeight: reason === p ? 700 : 400,
+              }}
+              onClick={() => setReason(p)}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <Field label="Or custom reason">
+        <textarea
+          rows={2}
+          value={reason}
+          placeholder="Specify reason..."
+          onChange={e => setReason(e.target.value)}
+        />
+      </Field>
+
+      <Button
+        variant="primary"
+        style={{ width: "100%", marginTop: "8px" }}
+        disabled={!reason}
+        onClick={() => onReject(reason)}
+      >
+        Confirm rejection
+      </Button>
     </Modal>
   );
 }

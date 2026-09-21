@@ -70,8 +70,39 @@ class OrderViewSet(viewsets.ModelViewSet):
         order.delivered_at = timezone.now()
         order.save()
         
+        # --- Escrow & Payout Logic (Day 11) ---
+        from payments.models import Payment, Payout, PlatformSettings
+        
+        # 1. Find held payment and release it
+        payment = Payment.objects.filter(order=order, status="held").first()
+        if payment:
+            payment.status = "released"
+            payment.save()
+
+            # 2. Calculate commission
+            settings = PlatformSettings.load()
+            commission_rate = settings.commission_rate
+            gross_amount = payment.amount
+            commission_amount = int(gross_amount * (commission_rate / 100))
+            net_amount = gross_amount - commission_amount
+
+            # 3. Create Payout
+            Payout.objects.create(
+                order=order,
+                seller=order.seller,
+                gross_amount=gross_amount,
+                commission_rate=commission_rate,
+                commission_amount=commission_amount,
+                net_amount=net_amount,
+                status="sent",  # auto-disbursed
+                payout_phone=order.seller.phone,
+                sent_at=timezone.now()
+            )
+
         from notifications.sms import send_sms
         send_sms(order.buyer.phone, f"Your order for {order.item_name} has been delivered! Please confirm receipt in the app.")
+        if payment:
+            send_sms(order.seller.phone, f"Order {order.id} delivered. Payout of UGX {net_amount:,} is on the way to your Mobile Money account.")
         
         return Response(OrderSerializer(order).data)
 

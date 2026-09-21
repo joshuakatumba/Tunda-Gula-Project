@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 from django.urls import path
 from . import views
 
@@ -10,8 +11,14 @@ urlpatterns = [
     path("otp/verify/", views.verify_otp, name="otp-verify"),
     path("me/", views.me, name="me"),
 
+    # Session management
+    path("token/refresh/", views.refresh_token, name="token-refresh"),
+    path("logout/", views.logout_view, name="logout"),
+    path("logout-all/", views.logout_all, name="logout-all"),
+
     # Admin — seller verification
     path("pending/", views.PendingVerificationsView.as_view(), name="pending"),
     path("<int:pk>/approve/", views.approve_seller, name="approve-seller"),
     path("<int:pk>/reject/", views.reject_seller, name="reject-seller"),
 ]
+

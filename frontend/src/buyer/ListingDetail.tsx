@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Play, Pause, MapPin, Mic, Loader2 } from "lucide-react";
+import { Play, Pause, MapPin, Mic, Loader2, ArrowLeft } from "lucide-react";
 import { EMOJI, TINT } from "../data/categories";
 import { ugx, typeLabel } from "../utils/helpers";
 import { Badge } from "../components/Badge";
-import { Req } from "../components/Req";
 import { Field } from "../components/Field";
+import { Button } from "../components/ui/Button";
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
 
@@ -16,7 +16,6 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
 
-  // Fetch full listing detail from API (includes real photos and voice file)
   useEffect(() => {
     const rawId = String(initial.id).replace("L-", "");
     if (!rawId || isNaN(Number(rawId))) return;
@@ -46,7 +45,7 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
           note: data.description || "",
         });
       })
-      .catch(() => { /* keep initial data on failure */ })
+      .catch(() => { /* keep initial */ })
       .finally(() => setLoading(false));
   }, [initial.id]);
 
@@ -64,94 +63,169 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
   const hasRealPhotos = l.photos_data && l.photos_data.length > 0;
 
   return (
-    <>
-      <button className="link" style={{ marginTop: 18 }} onClick={onBack}>Back to the marketplace</button>
-      {loading && <div className="hint" style={{ marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6 }}><Loader2 size="1em" className="spin" /> Loading details...</div>}
-      <div className="grid" style={{ gridTemplateColumns: "1.3fr .7fr", marginTop: 14, alignItems: "start" }}>
-        <div className="stack">
+    <div>
+      <div style={{ marginBottom: "20px" }}>
+        <button
+          onClick={onBack}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            background: "none",
+            border: "none",
+            color: "var(--color-forest-ink)",
+            fontSize: "14px",
+            fontWeight: 600,
+            cursor: "pointer",
+            padding: 0,
+            textDecoration: "underline",
+          }}
+        >
+          <ArrowLeft size={16} /> Back to marketplace
+        </button>
+      </div>
+
+      {loading && (
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--color-slate)", marginBottom: "12px" }}>
+          <Loader2 size={14} className="spin" /> Loading details...
+        </div>
+      )}
+
+      <div className="grid" style={{ gridTemplateColumns: "1.3fr .7fr", gap: "24px", alignItems: "start" }}>
+        <div className="stack" style={{ gap: "20px" }}>
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-            {/* Main photo / emoji fallback */}
-            <div style={{ height: 320, background: `linear-gradient(to bottom right, #FFF, ${TINT[l.cat]}50)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 96 }}>
-              {hasRealPhotos
-                ? <img src={l.photos_data[shot]?.image} alt={l.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                : <span>{EMOJI[l.cat]}</span>}
+            <div style={{ height: 320, background: "var(--color-fog)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 96 }}>
+              {hasRealPhotos ? (
+                <img src={l.photos_data[shot]?.image} alt={l.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <span>{EMOJI[l.cat]}</span>
+              )}
             </div>
-            {/* Photo thumbnails */}
             {(hasRealPhotos || l.photos > 0) && (
-              <div className="row" style={{ padding: 16, gap: 10, background: "rgba(255,255,255,0.8)", borderTop: "1px solid var(--line)" }}>
-                {hasRealPhotos
-                  ? l.photos_data.map((p: any, i: number) => (
-                    <button key={p.id} onClick={() => setShot(i)} style={{ width: 64, height: 54, overflow: "hidden", border: i === shot ? "2px solid var(--grow)" : "1px solid var(--line)", borderRadius: 8, padding: 0 }}>
+              <div className="row" style={{ padding: "16px", gap: "10px", background: "var(--color-paper)", borderTop: "1px solid var(--color-fog)" }}>
+                {hasRealPhotos ? (
+                  l.photos_data.map((p: any, i: number) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setShot(i)}
+                      style={{
+                        width: 64,
+                        height: 54,
+                        overflow: "hidden",
+                        border: i === shot ? "2px solid var(--color-forest-ink)" : "1px solid var(--color-fog)",
+                        borderRadius: "8px",
+                        padding: 0,
+                        cursor: "pointer",
+                      }}
+                    >
                       <img src={p.image} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </button>
                   ))
-                  : Array.from({ length: l.photos }).map((_, i) => (
-                    <button key={i} onClick={() => setShot(i)} style={{ width: 64, height: 54, background: `linear-gradient(to bottom right, #FFF, ${TINT[l.cat]}50)`, border: i === shot ? "2px solid var(--grow)" : "1px solid var(--line)", borderRadius: 8, fontSize: 24 }}>{EMOJI[l.cat]}</button>
+                ) : (
+                  Array.from({ length: l.photos }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setShot(i)}
+                      style={{
+                        width: 64,
+                        height: 54,
+                        background: "var(--color-fog)",
+                        border: i === shot ? "2px solid var(--color-forest-ink)" : "1px solid var(--color-fog)",
+                        borderRadius: "8px",
+                        fontSize: 24,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {EMOJI[l.cat]}
+                    </button>
                   ))
-                }
-                <span className="hint" style={{ marginLeft: "auto", fontWeight: 600 }}>{l.photos} photos from the farm</span>
+                )}
+                <span style={{ marginLeft: "auto", fontSize: "12px", fontWeight: 600, color: "var(--color-slate)" }}>
+                  {l.photos} photos
+                </span>
               </div>
             )}
           </div>
 
           <div className="card">
-            <div className="row" style={{ gap: 6 }}>
-              {l.verified ? <Badge tone="b-green">Verified farmer</Badge> : <Badge tone="b-maize">Verification pending</Badge>}
+            <div className="row" style={{ gap: "6px" }}>
+              {l.verified && <Badge tone="b-green">Verified</Badge>}
               {l.top && <Badge tone="b-maize">Top seller</Badge>}
-              <Badge tone="b-grey">{l.cat}</Badge>
+              <Badge>{l.cat}</Badge>
             </div>
-            <h1 style={{ marginTop: 12, fontSize: 27 }}>{l.name}</h1>
-            <p className="lede">{l.note}</p>
+            <h1 style={{ marginTop: "12px", fontSize: "28px", fontWeight: 700, color: "var(--color-obsidian)" }}>{l.name}</h1>
+            {l.note && <p style={{ fontSize: "16px", color: "var(--color-charcoal)", lineHeight: 1.5, margin: "8px 0 0" }}>{l.note}</p>}
 
-            {/* Voice note — play real audio file if available */}
             {l.voice > 0 && (
-              <div className="card" style={{ marginTop: 16, background: "var(--leaf2)", border: 0 }}>
+              <div style={{ marginTop: "16px", background: "var(--color-linen-mist)", padding: "16px", borderRadius: "var(--radius-cards)" }}>
                 {l.voice_file ? (
                   <>
                     <audio ref={audioRef} src={l.voice_file} onEnded={() => setPlaying(false)} style={{ display: "none" }} />
-                    <div className="row">
-                      <button className="btn-sm" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF", borderColor: "var(--grow)", color: "var(--grow)" }} onClick={toggleVoice}>
-                        {playing ? <><Pause size="1em" fill="currentColor" /> Playing...</> : <><Play size="1em" fill="currentColor" /> Play voice note</>}
+                    <div className="row" style={{ gap: "12px" }}>
+                      <button
+                        className="btn-sm"
+                        style={{
+                          background: "var(--color-paper)",
+                          borderColor: "var(--color-forest-ink)",
+                          color: "var(--color-forest-ink)",
+                          fontWeight: 600,
+                        }}
+                        onClick={toggleVoice}
+                      >
+                        {playing ? <><Pause size={14} /> Pause</> : <><Play size={14} /> Play voice note</>}
                       </button>
-                      <div style={{ flex: 1, display: "flex", gap: 3, alignItems: "flex-end", height: 32 }}>
-                        {Array.from({ length: 40 }).map((_, i) => (
-                          <span key={i} style={{ flex: 1, height: (12 + ((i * 37) % 20)) + "px", background: playing ? "var(--grow)" : "var(--line)", borderRadius: 2, transition: "background 0.2s" }} />
-                        ))}
-                      </div>
-                      <span className="hint mono" style={{ fontWeight: 700 }}>{l.voice}s</span>
+                      <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-forest-ink)" }}>
+                        {l.voice}s recording
+                      </span>
                     </div>
                   </>
                 ) : (
-                  <div className="row">
-                    <Mic size="1em" />
-                    <span className="hint">Voice note: {l.voice}s — available after purchase</span>
+                  <div className="row" style={{ gap: "8px", color: "var(--color-forest-ink)", fontSize: "14px" }}>
+                    <Mic size={16} />
+                    <span>Voice description: {l.voice}s</span>
                   </div>
                 )}
-                <p className="hint" style={{ marginTop: 10 }}>The farmer described this listing out loud instead of typing it.</p>
               </div>
             )}
 
-            <div className="grid g2" style={{ marginTop: 14 }}>
-              <div><div className="hint">Available</div><div className="mono" style={{ fontSize: 16 }}>{l.qty} {l.unit}</div></div>
-              <div><div className="hint">This week's market reference</div><div className="mono" style={{ fontSize: 16 }}>{ugx(l.ref)} / {l.unit}</div></div>
+            <div className="grid g2" style={{ marginTop: "20px" }}>
+              <div>
+                <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, color: "var(--color-slate)" }}>Available</div>
+                <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)", marginTop: "4px" }}>{l.qty} {l.unit}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, color: "var(--color-slate)" }}>Market reference</div>
+                <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)", marginTop: "4px" }}>{ugx(l.ref)} / {l.unit}</div>
+              </div>
             </div>
           </div>
 
           <div className="card">
-            <h3>Where it comes from</h3>
-            <div className="map" style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><MapPin size="1em" /> {l.district} district — approximate area only</div>
-            <p className="hint" style={{ marginTop: 8 }}>Exact farm coordinates are never shown publicly. The precise pin is shared with you once an order is accepted.</p>
+            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 12px", color: "var(--color-obsidian)" }}>Location</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-forest-ink)", fontSize: "15px", fontWeight: 500 }}>
+              <MapPin size={18} /> {l.district} district
+            </div>
           </div>
 
           {other.length > 0 && (
             <div className="card">
-              <h3>Also from {l.seller}</h3>
-              <div className="grid g3" style={{ marginTop: 12 }}>
+              <h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 16px", color: "var(--color-obsidian)" }}>More from this seller</h2>
+              <div className="grid g3">
                 {other.map(o => (
-                  <button key={o.id} className="listing" onClick={() => onOpen(o.id)}>
-                    <div className="photo" style={{ background: TINT[o.cat], height: 70, fontSize: 24 }}><span>{EMOJI[o.cat]}</span></div>
-                    <div style={{ padding: 10 }}>
-                      <h4>{o.name}</h4><div className="mono" style={{ fontSize: 13, marginTop: 4 }}>{ugx(o.price)}/{o.unit}</div>
+                  <button
+                    key={o.id}
+                    className="listing"
+                    onClick={() => onOpen(o.id)}
+                    style={{ textAlign: "left", cursor: "pointer", padding: 0 }}
+                  >
+                    <div style={{ background: "var(--color-fog)", height: 70, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>
+                      <span>{EMOJI[o.cat]}</span>
+                    </div>
+                    <div style={{ padding: "10px" }}>
+                      <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>{o.name}</h4>
+                      <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-forest-ink)", marginTop: "4px" }}>
+                        {ugx(o.price)} / {o.unit}
+                      </div>
                     </div>
                   </button>
                 ))}
@@ -160,38 +234,55 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
           )}
         </div>
 
-        <div className="stack" style={{ position: "sticky", top: 90 }}>
+        <div className="stack" style={{ position: "sticky", top: 90, gap: "16px" }}>
           <div className="card">
-            <div className="price" style={{ fontSize: 26 }}>{ugx(l.price)}</div>
-            <div className="ref">per {l.unit} · market reference {ugx(l.ref)}</div>
-            <div className="rule" style={{ margin: "14px 0" }} />
-            <Field label={`How much (${l.unit})`}>
-              <div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+            <div style={{ fontSize: "28px", fontWeight: 700, color: "var(--color-forest-ink)" }}>{ugx(l.price)}</div>
+            <div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "2px" }}>per {l.unit} · ref {ugx(l.ref)}</div>
+            <div className="rule" style={{ margin: "16px 0" }} />
+            <Field label={`Quantity (${l.unit})`}>
+              <div className="row" style={{ gap: 8, flexWrap: "nowrap" }}>
                 <button className="btn-sm" onClick={() => setQty(q => Math.max(1, q - 5))}>-</button>
-                <input type="number" value={qty} min="1" max={l.qty} style={{ textAlign: "center" }}
-                  onChange={e => setQty(Math.max(1, Math.min(l.qty, Number(e.target.value) || 1)))} />
+                <input
+                  type="number"
+                  value={qty}
+                  min="1"
+                  max={l.qty}
+                  style={{ textAlign: "center", fontWeight: 600 }}
+                  onChange={e => setQty(Math.max(1, Math.min(l.qty, Number(e.target.value) || 1)))}
+                />
                 <button className="btn-sm" onClick={() => setQty(q => Math.min(l.qty, q + 5))}>+</button>
               </div>
             </Field>
-            <div className="between" style={{ marginTop: 12 }}><span className="hint">Total</span><strong className="mono">{ugx(qty * l.price)}</strong></div>
-            <button className="btn-maize" style={{ width: "100%", marginTop: 12 }} disabled={l.qty === 0} onClick={() => onAdd(l, qty)}>
-              {l.qty === 0 ? "Sold out" : "Add to basket"}
-            </button>
-            <p className="hint" style={{ marginTop: 9 }}>Pay by MTN or Airtel Mobile Money at checkout. Your money is released to the farmer only after you confirm delivery.</p>
+            <div className="between" style={{ marginTop: "16px", alignItems: "center" }}>
+              <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-slate)" }}>Total</span>
+              <strong style={{ fontSize: "20px", color: "var(--color-obsidian)" }}>{ugx(qty * l.price)}</strong>
+            </div>
+            <div style={{ marginTop: "16px" }}>
+              <Button
+                variant="primary"
+                style={{ width: "100%" }}
+                disabled={l.qty === 0}
+                onClick={() => onAdd(l, qty)}
+              >
+                {l.qty === 0 ? "Sold out" : "Add to basket"}
+              </Button>
+            </div>
           </div>
 
           <div className="card">
-            <h3>{l.seller}</h3>
-            <p className="hint" style={{ marginTop: 4 }}>{typeLabel(l.sellerType)} · {l.district}</p>
-            <div className="row" style={{ marginTop: 10 }}>
-              <span style={{ color: "var(--maize)", fontSize: 16 }}>{"*".repeat(Math.round(l.rating || 0)).split("").map((_, i) => <span key={i}>&#9733;</span>)}</span>
-              <span className="mono" style={{ fontSize: 14, fontWeight: 700 }}>{l.rating || "No ratings"}</span>
-              {l.ratings > 0 && <span className="hint">({l.ratings} ratings)</span>}
+            <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--color-obsidian)" }}>{l.seller}</h3>
+            <div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "4px" }}>
+              {typeLabel(l.sellerType)} · {l.district}
+            </div>
+            <div className="row" style={{ marginTop: "10px", gap: "6px" }}>
+              <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--color-forest-ink)" }}>
+                {l.rating ? `${l.rating} ★` : "New seller"}
+              </span>
+              {l.ratings > 0 && <span style={{ fontSize: "12px", color: "var(--color-pebble)" }}>({l.ratings} reviews)</span>}
             </div>
           </div>
         </div>
       </div>
-      <div className="row" style={{ marginTop: 16, gap: 5 }}>{["REQ-014", "REQ-015", "REQ-017", "REQ-022", "REQ-050", "REQ-034"].map(r => <Req key={r} id={r} />)}</div>
-    </>
+    </div>
   );
 }

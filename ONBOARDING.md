@@ -40,7 +40,7 @@ Optional but useful:
 Open Command Prompt and run:
 
 ```cmd
-git clone <repo-url>
+git clone https://github.com/joshuakatumba/Tunda-Gula-Project.git
 cd "Tunda Gula"
 ```
 
