@@ -13,19 +13,39 @@ jobs:
         id: ssh_host
         env:
           RAW_HOST: ${{ secrets.AZURE_HOST }}
+          RAW_PORT: ${{ secrets.AZURE_PORT }}
         run: |
           set -euo pipefail
-          HOST="$(printf '%s' "$RAW_HOST" | sed -E 's#^[a-zA-Z]+://##; s#/.*$##')"
+          ENDPOINT="$(printf '%s' "$RAW_HOST" | sed -E 's#^[a-zA-Z]+://##; s#/.*$##')"
+          HOST="$ENDPOINT"
+          PORT="${RAW_PORT:-22}"
+
+          if [[ "$ENDPOINT" =~ ^\[([^]]+)\]:([0-9]+)$ ]]; then
+            HOST="${BASH_REMATCH[1]}"
+            PORT="${BASH_REMATCH[2]}"
+          elif [[ "$ENDPOINT" =~ ^([^:]+):([0-9]+)$ ]]; then
+            HOST="${BASH_REMATCH[1]}"
+            PORT="${BASH_REMATCH[2]}"
+          fi
+
           if [ -z "$HOST" ]; then
             echo "AZURE_HOST secret is empty or invalid."
             exit 1
           fi
+
+          if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+            echo "SSH port is invalid: $PORT"
+            exit 1
+          fi
+
           echo "value=$HOST" >> "$GITHUB_OUTPUT"
+          echo "port=$PORT" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to server via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ steps.ssh_host.outputs.value }}
+          port: ${{ steps.ssh_host.outputs.port }}
           username: ${{ secrets.AZURE_USERNAME }}
           key: ${{ secrets.AZURE_SSH_KEY }}
           script: |
