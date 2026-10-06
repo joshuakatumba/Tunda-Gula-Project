@@ -31,7 +31,7 @@ interface FarmMapProps {
   height?: number;
 }
 
-export function FarmMap({ pins, height = 400 }: FarmMapProps) {
+export default function FarmMap({ pins, height = 400 }: FarmMapProps) {
   // Default centre: Uganda
   const centre: [number, number] = [1.3733, 32.2903];
 

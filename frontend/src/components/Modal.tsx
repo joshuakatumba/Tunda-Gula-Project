@@ -11,8 +11,28 @@ export const Modal = ({
   onClose: () => void;
   children: React.ReactNode;
   wide?: boolean;
-}) => (
-  <div className="veil" onClick={onClose}>
+}) => {
+  const onCloseRef = React.useRef(onClose);
+  React.useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  React.useEffect(() => {
+    const handlePopState = () => {
+      if (onCloseRef.current) onCloseRef.current();
+    };
+    window.history.pushState({ modal: true }, "");
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      if (window.history.state?.modal) {
+        window.history.back();
+      }
+    };
+  }, []);
+
+  return (
+    <div className="veil" onClick={onClose}>
     <div
       className="modal"
       style={{
@@ -84,4 +104,5 @@ export const Modal = ({
       </div>
     </div>
   </div>
-);
+  );
+};

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { Head } from "../components/Head";
 import { Stat } from "../components/Stat";
-import { FarmMap } from "../components/FarmMap";
+const FarmMap = React.lazy(() => import("../components/FarmMap"));
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
 
@@ -47,7 +47,9 @@ export default function AdminDelivery() {
             Map coordinates currently unavailable.
           </div>
         ) : (
-          <FarmMap pins={pins} height={380} />
+          <Suspense fallback={<div className="skeleton" style={{ height: 380, width: "100%", borderRadius: 8 }} />}>
+            <FarmMap pins={pins} height={380} />
+          </Suspense>
         )}
       </div>
 

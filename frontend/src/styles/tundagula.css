@@ -14,7 +14,44 @@
   --color-slate: #6a6c6a;
   --color-fog: #e8ebe6;
   --color-paper: #ffffff;
+}
 
+:root {
+  /* Semantic aliases — used for topbar, buttons, and surfaces that stay dark */
+  --surface-dark: var(--color-forest-ink);
+  --surface-dark-hover: var(--color-spruce);
+  --text-on-dark: var(--color-paper);
+  --text-primary: var(--color-obsidian);
+  --text-secondary: var(--color-charcoal);
+  --surface-card: var(--color-paper);
+  --surface-muted: var(--color-fog);
+  --border-subtle: var(--color-fog);
+}
+
+:root[data-theme="dark"] {
+  /* Core palette for dark mode — text/background flip */
+  --color-obsidian: #f0f3ed;
+  --color-charcoal: #e0e3de;
+  --color-pebble: #a0a09f;
+  --color-slate: #c0c0be;
+  --color-fog: #2a2d28;
+  --color-paper: #111210;
+  --color-linen-mist: #1e2a1a;
+  --color-signal-blue: #4da6df;
+  --color-alarm-red: #ff5252;
+
+  /* Semantic overrides — topbar/buttons remain dark green */
+  --surface-dark: #163300;
+  --surface-dark-hover: #054d28;
+  --text-on-dark: #f0f3ed;
+  --text-primary: #f0f3ed;
+  --text-secondary: #e0e3de;
+  --surface-card: #1a1c19;
+  --surface-muted: #2a2d28;
+  --border-subtle: #363936;
+}
+
+:root {
   /* Typography — Font Families */
   --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-wise-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; /* Fallback to Inter */
@@ -49,11 +86,50 @@
   --shadow-subtle-2: rgb(134, 134, 133) 0px 0px 0px 1px inset;
   --shadow-xl: rgba(0, 0, 0, 0.15) 0px 10px 32px 0px, rgba(0, 0, 0, 0.04) 0px 40px 40px 0px;
   --shadow-lg: rgba(0, 0, 0, 0.08) 0px 6px 20px 0px;
+
+  /* Icon sizes */
+  --icon-xs: 14px;
+  --icon-sm: 18px;
+  --icon-md: 22px;
+  --icon-lg: 28px;
+  --icon-xl: 36px;
+}
+
+.icon-active {
+  position: relative;
+}
+.icon-active::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-lime-voltage);
+  border-radius: 50%;
+  border: 2px solid var(--color-paper);
+}
+
+.icon-badge {
+  position: relative;
+}
+.icon-badge::after {
+  content: attr(data-count);
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background: var(--color-lime-voltage);
+  color: var(--color-forest-ink);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  border: 2px solid var(--color-paper);
 }
 
 body {
   font-family: var(--font-inter);
-  color: var(--color-charcoal);
+  color: var(--text-secondary);
   background: var(--color-paper);
   min-height: 100vh;
   margin: 0;
@@ -80,6 +156,10 @@ button {
   background: none;
   color: inherit;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.96);
 }
 
 a {
@@ -252,8 +332,8 @@ input::placeholder, textarea::placeholder {
 
 /* Top Navigation */
 .topbar {
-  background: var(--color-forest-ink);
-  color: var(--color-paper);
+  background: var(--surface-dark);
+  color: var(--text-on-dark);
   position: sticky;
   top: 0;
   z-index: 40;
@@ -275,7 +355,7 @@ input::placeholder, textarea::placeholder {
   font-weight: 900;
   font-size: 24px;
   letter-spacing: -0.03em;
-  color: var(--color-paper);
+  color: var(--text-on-dark);
 }
 
 .brand span {
@@ -356,8 +436,8 @@ input::placeholder, textarea::placeholder {
 
 /* Backward Compatibility Classes for Unmigrated Components */
 .card {
-  background: var(--color-paper);
-  border: 1px solid var(--color-fog);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-cards);
   padding: 24px;
   box-shadow: var(--shadow-subtle);
@@ -365,8 +445,8 @@ input::placeholder, textarea::placeholder {
 }
 
 .btn {
-  background: var(--color-forest-ink);
-  color: var(--color-paper);
+  background: var(--surface-dark);
+  color: var(--text-on-dark);
   border-radius: var(--radius-buttons);
   padding: 11px 24px;
   font-weight: 500;
@@ -375,7 +455,7 @@ input::placeholder, textarea::placeholder {
   justify-content: center;
 }
 .btn:hover {
-  background: var(--color-spruce);
+  background: var(--surface-dark-hover);
 }
 
 .btn-maize {
@@ -458,7 +538,7 @@ input::placeholder, textarea::placeholder {
   text-transform: uppercase;
   color: var(--color-slate);
   padding: 12px;
-  border-bottom: 1px solid var(--color-fog);
+  border-bottom: 1px solid var(--border-subtle);
 }
 .tbl td {
   padding: 12px;
@@ -467,8 +547,8 @@ input::placeholder, textarea::placeholder {
 }
 
 .listing {
-  background: var(--color-paper);
-  border: 1px solid var(--color-fog);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-cards);
   display: flex;
   flex-direction: column;
@@ -827,6 +907,18 @@ input::placeholder, textarea::placeholder {
 @keyframes spin { to { transform: rotate(360deg); } }
 .spin { animation: spin 0.8s linear infinite; }
 
+/* Skeleton loading shimmer */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-fog) 25%, #f0f3ed 50%, var(--color-fog) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-cards);
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .hero-in { grid-template-columns: 1fr; gap: 40px; }
@@ -846,4 +938,110 @@ input::placeholder, textarea::placeholder {
   .sec, .band { padding: 48px 16px; }
   .foot-in { flex-direction: column; gap: 24px; }
   .shell { padding: 0 16px 48px; }
+}
+
+@media (max-height: 600px) {
+  .veil {
+    align-items: flex-end;
+  }
+  .modal {
+    max-height: 100vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+/* Mobile Nav Drawer */
+.hamburger-btn {
+  display: none;
+}
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(22, 51, 0, 0.4);
+  z-index: 100;
+  animation: fadeIn 0.2s ease;
+}
+.drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--color-paper);
+  box-shadow: -4px 0 24px rgba(0,0,0,0.1);
+  animation: slideLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+.drawer-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-fog);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.drawer-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.drawer-user-info {
+  background: var(--color-fog);
+  padding: 16px;
+  border-radius: var(--radius-cards);
+}
+@keyframes slideLeft { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+/* Bottom Nav */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface-card);
+  border-top: 1px solid var(--border-subtle);
+  z-index: 80;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+  background: none;
+  border: none;
+  color: var(--color-slate);
+  cursor: pointer;
+  transition: all 0.2s;
+  gap: 4px;
+}
+.bottom-nav-item i {
+  font-size: 24px;
+  transition: transform 0.2s;
+}
+.bottom-nav-item:active i {
+  transform: scale(0.9);
+}
+.bottom-nav-item span {
+  font-size: 11px;
+  font-weight: 500;
+}
+.bottom-nav-item.active {
+  color: var(--color-forest-ink);
+}
+.bottom-nav-item.active i {
+  color: var(--color-lime-voltage);
+  text-shadow: 0 0 2px rgba(159, 232, 112, 0.5); /* glow effect */
+}
+
+@media (max-width: 768px) {
+  .hamburger-btn { display: inline-flex; }
+  .desktop-nav-links { display: none !important; }
+  .bottom-nav { display: flex; }
+  .shell { padding-bottom: 80px; } /* make room for bottom nav */
 }

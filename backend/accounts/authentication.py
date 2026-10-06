@@ -8,8 +8,11 @@ with a distinguishable error code so the frontend can attempt a refresh.
 
 from datetime import timedelta
 
+# pyrefly: ignore [missing-import]
 from django.utils import timezone
+# pyrefly: ignore [missing-import]
 from rest_framework.authentication import TokenAuthentication
+# pyrefly: ignore [missing-import]
 from rest_framework.exceptions import AuthenticationFailed
 
 

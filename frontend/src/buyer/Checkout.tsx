@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Smartphone, CheckCircle } from "lucide-react";
 import { EMOJI } from "../data/categories";
 import { ugx } from "../utils/helpers";
@@ -9,7 +9,7 @@ import { Button } from "../components/ui/Button";
 export default function Checkout({ cart, setCart, commission, onClose, onPay, t }) {
   const [provider, setProvider] = useState("MTN");
   const [stage, setStage] = useState("cart");
-  const total = cart.reduce((s, c) => s + c.qty * c.price, 0);
+  const total = useMemo(() => cart.reduce((s, c) => s + c.qty * c.price, 0), [cart]);
 
   const go = () => {
     setStage("waiting");

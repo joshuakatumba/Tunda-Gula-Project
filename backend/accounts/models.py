@@ -18,20 +18,27 @@ from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
-    """Custom manager — phone number is the login identifier, no password by default."""
+    """Custom manager — supports phone or email identifiers and password authentication."""
 
-    def create_user(self, phone, role, **extra):
-        if not phone:
-            raise ValueError("Phone number is required")
-        user = self.model(phone=phone, role=role, **extra)
-        user.set_unusable_password()  # OTP-based auth — no password
+    def create_user(self, phone=None, role=None, password=None, email="", **extra):
+        if not phone and not email:
+            raise ValueError("Either phone number or email is required")
+        if phone == "":
+            phone = None
+        user = self.model(phone=phone, role=role, email=email, **extra)
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, phone, role="admin", password=None, **extra):
+    def create_superuser(self, phone=None, role="admin", password=None, email="", **extra):
         extra.setdefault("is_staff", True)
         extra.setdefault("is_superuser", True)
-        user = self.model(phone=phone, role=role, **extra)
+        if phone == "":
+            phone = None
+        user = self.model(phone=phone, role=role, email=email, **extra)
         if password:
             user.set_password(password)
         user.save(using=self._db)
@@ -62,9 +69,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         COOPERATIVE = "cooperative", "Cooperative or institution"
 
     # --- Identity ---
-    phone = models.CharField(max_length=20, unique=True)
+    phone = models.CharField(max_length=20, unique=True, null=True, blank=True)
     name = models.CharField(max_length=200)
-    email = models.EmailField(blank=True, default="")
+    email = models.EmailField(blank=True, default="", db_index=True)
     role = models.CharField(max_length=10, choices=Role.choices)
     seller_type = models.CharField(max_length=20, choices=SellerType.choices, blank=True, default="")
     buyer_type = models.CharField(max_length=20, choices=BuyerType.choices, blank=True, default="")
@@ -99,6 +106,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_table = "tg_users"
         verbose_name = "User"
         verbose_name_plural = "Users"
+
+    def save(self, *args, **kwargs):
+        if self.phone == "":
+            self.phone = None
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name} ({self.get_role_display()})"

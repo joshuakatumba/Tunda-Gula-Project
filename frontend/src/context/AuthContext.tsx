@@ -18,7 +18,8 @@ import { ENDPOINTS } from "../api/endpoints";
 
 export interface UserSession {
   id: number;
-  phone: string;
+  phone?: string;
+  email?: string;
   name: string;
   role: "buyer" | "seller" | "admin";
   seller_type: string;
@@ -31,6 +32,8 @@ export interface UserSession {
 interface AuthContextType {
   user: UserSession | null;
   loading: boolean;
+  /** Log in with email (or phone) and password */
+  login: (identifier: string, password: string) => Promise<UserSession>;
   /** Request an OTP code for a phone number */
   requestOtp: (phone: string) => Promise<{ message: string }>;
   /** Verify an OTP and get back a token + user (or verified flag for new users) */
@@ -141,6 +144,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  const login = async (identifier: string, password: string) => {
+    const res = await api.post(ENDPOINTS.login, { email: identifier, password });
+    if (res.token && res.user) {
+      saveSession(res.token, res.expires_at);
+      setUser(res.user);
+      return res.user;
+    }
+    throw new Error(res.error || "Login failed");
+  };
+
   const requestOtp = async (phone: string) => {
     return api.post(ENDPOINTS.requestOtp, { phone });
   };
@@ -168,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, requestOtp, verifyOtp, register, setSession, logout, logoutAll }}>
+    <AuthContext.Provider value={{ user, loading, login, requestOtp, verifyOtp, register, setSession, logout, logoutAll }}>
       {children}
     </AuthContext.Provider>
   );

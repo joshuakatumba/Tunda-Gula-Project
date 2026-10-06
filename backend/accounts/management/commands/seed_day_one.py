@@ -27,12 +27,11 @@ class Command(BaseCommand):
                 "otp_verified": True,
             },
         )
-        if created:
-            admin_user.set_password("admin123")
-            admin_user.save()
-            self.stdout.write(self.style.SUCCESS(f"Created staff account: {admin_phone}"))
-        else:
-            self.stdout.write(f"Staff account already exists: {admin_phone}")
+        admin_user.email = "admin@tundagula.ug"
+        admin_user.set_password("admin123")
+        admin_user.otp_verified = True
+        admin_user.save()
+        self.stdout.write(self.style.SUCCESS(f"Configured staff account: admin@tundagula.ug (pass: admin123)"))
 
         # 2. Farmer (Seller) Account
         farmer_phone = "+256772000001"
@@ -66,12 +65,14 @@ class Command(BaseCommand):
                 "role": User.Role.BUYER,
                 "buyer_type": User.BuyerType.HOUSEHOLD,
                 "district": "Kampala",
+                "email": "buyer@tundagula.ug",
                 "otp_verified": True,
             },
         )
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Created buyer account: {buyer_phone} ({buyer_user.name})"))
-        else:
-            self.stdout.write(f"Buyer account already exists: {buyer_phone}")
+        buyer_user.email = "buyer@tundagula.ug"
+        buyer_user.set_password("buyer123")
+        buyer_user.otp_verified = True
+        buyer_user.save()
+        self.stdout.write(self.style.SUCCESS(f"Configured buyer account: buyer@tundagula.ug (pass: buyer123)"))
 
         self.stdout.write(self.style.SUCCESS("Day 1 accounts seeding complete."))

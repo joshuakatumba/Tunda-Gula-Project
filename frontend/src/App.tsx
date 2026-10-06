@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import "./styles/tundagula.css";
-import { GooeyToaster, gooeyToast } from "goey-toast";
+import { Toaster, toast } from "sonner";
 
 import { STR } from "./data/strings";
 import { SEED_LISTINGS, SEED_PLANS, SEED_ORDERS, SEED_PENDING, SEED_DISPUTES } from "./data/seedData";
@@ -11,11 +11,19 @@ import { api } from "./api/client";
 import { ENDPOINTS } from "./api/endpoints";
 
 import { PriceRail } from "./components/PriceRail";
-import Landing from "./landing/Landing";
-import Auth from "./auth/Auth";
-import BuyerApp from "./buyer/BuyerApp";
-import SellerApp from "./seller/SellerApp";
-import AdminApp from "./admin/AdminApp";
+import { MobileNav } from "./components/MobileNav";
+import { BottomNav } from "./components/BottomNav";
+const Landing = React.lazy(() => import("./landing/Landing"));
+const Auth = React.lazy(() => import("./auth/Auth"));
+const BuyerApp = React.lazy(() => import("./buyer/BuyerApp"));
+const SellerApp = React.lazy(() => import("./seller/SellerApp"));
+const AdminApp = React.lazy(() => import("./admin/AdminApp"));
+
+const LazyFallback = () => (
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "64px 24px" }}>
+    <div className="skeleton" style={{ width: "100%", maxWidth: 600, height: 200, borderRadius: "var(--radius-cards)" }} />
+  </div>
+);
 
 import { Button } from "./components/ui/Button";
 import { SegmentedControl } from "./components/ui/SegmentedControl";
@@ -43,7 +51,16 @@ export default function App() {
   ]);
 
   const t = STR[lang];
-  const say = (m: string) => { gooeyToast.success(m); };
+  const [theme, setTheme] = useState(localStorage.getItem("tg-theme") || "light");
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("tg-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === "light" ? "dark" : "light");
+
+  const say = (m: string) => { toast.success(m, { duration: Infinity }); };
   const pushSms = (to, text) => setSms(s => [{ to, text }, ...s].slice(0, 8));
 
   // ── Fetch data from API when user logs in ──
@@ -166,14 +183,33 @@ export default function App() {
     admin: [["overview", t.overview], ["verify", t.verify], ["accounts", t.accounts], ["disputes", t.disputes], ["adelivery", t.delivery], ["areports", t.reports]],
   };
 
+  const BOTTOM_NAV = {
+    buyer: [
+      { id: "browse", label: "Shop", icon: "bx-store-alt" },
+      { id: "preorders", label: "Pre-order", icon: "bx-calendar" },
+      { id: "myorders", label: "Orders", icon: "bx-receipt" }
+    ],
+    seller: [
+      { id: "home", label: "Home", icon: "bx-home-alt-2" },
+      { id: "listings", label: "Listings", icon: "bx-list-ul" },
+      { id: "sorders", label: "Orders", icon: "bx-package" }
+    ],
+    admin: [
+      { id: "overview", label: "Dashboard", icon: "bx-pie-chart-alt-2" },
+      { id: "verify", label: "Verify", icon: "bx-check-shield" },
+      { id: "disputes", label: "Disputes", icon: "bx-error-circle" }
+    ]
+  };
+
   // Build a session-like object for child components (backward compatible)
   const session = user ? {
     ...user,
     type: user.seller_type || user.buyer_type || null,
   } : null;
 
-  const ctx = { listings, setListings, plans, setPlans, orders, setOrders, pending, setPending, disputes, setDisputes,
-    commission, setCommission, depositDefault, setDepositDefault, say, pushSms, sms, t, session, fetchData };
+  const ctx = useMemo(() => ({ listings, setListings, plans, setPlans, orders, setOrders, pending, setPending, disputes, setDisputes,
+    commission, setCommission, depositDefault, setDepositDefault, say, pushSms, sms, t, session, fetchData }),
+    [listings, plans, orders, pending, disputes, commission, depositDefault, sms, t, session, fetchData]);
 
   if (authLoading) {
     return (
@@ -204,7 +240,17 @@ export default function App() {
           )}
 
           <div className="row" style={{ marginLeft: "auto", gap: 16 }}>
-            <div className="lang" style={{ display: 'flex', gap: '4px' }}>{["en", "lg", "sw"].map(l =>
+            <button
+              onClick={toggleTheme}
+              style={{
+                background: "none", border: "none", cursor: "pointer",
+                color: "var(--color-slate)", display: "flex", alignItems: "center", justifyContent: "center", padding: 8
+              }}
+              title="Toggle Theme"
+            >
+              <i className={`bx ${theme === 'dark' ? 'bx-sun' : 'bx-moon'}`} style={{ fontSize: 20 }}></i>
+            </button>
+            <div className="lang desktop-nav-links" style={{ display: 'flex', gap: '4px' }}>{["en", "lg", "sw"].map(l =>
               <button key={l} 
                 style={{ 
                   padding: '6px 10px', 
@@ -219,7 +265,7 @@ export default function App() {
                 onClick={() => setLang(l)}>{l.toUpperCase()}</button>)}
             </div>
             {session ? (
-              <>
+              <div className="desktop-nav-links row" style={{ gap: 16 }}>
                 <div style={{ textAlign: 'right', lineHeight: 1.2 }}>
                   <b style={{ display: 'block', fontSize: '14px', color: 'var(--color-paper)' }}>{session.name}</b>
                   <span style={{ fontSize: '12px', color: 'var(--color-pebble)' }}>
@@ -227,38 +273,44 @@ export default function App() {
                   </span>
                 </div>
                 <Button variant="outline" onClick={signOut}>{t.logout}</Button>
-              </>
+              </div>
             ) : (
-              <>
+              <div className="desktop-nav-links row" style={{ gap: 16 }}>
                 <Button variant="text" onClick={() => setAuth({ mode: "login" })} style={{ color: 'var(--color-paper)' }}>{t.login}</Button>
                 <Button variant="primary" onClick={() => setAuth({ mode: "join" })}>{t.join}</Button>
-              </>
+              </div>
             )}
+            <MobileNav onAuthOpen={() => setAuth({ mode: "login" })} />
           </div>
         </div>
       </header>
 
       <PriceRail t={t} />
 
-      {screen === "landing" && <Landing t={t} onJoin={(role) => setAuth({ mode: "join", role })} onLogin={() => setAuth({ mode: "login" })} />}
+      {screen === "landing" && <Suspense fallback={<LazyFallback />}><Landing t={t} onJoin={(role) => setAuth({ mode: "join", role })} onLogin={() => setAuth({ mode: "login" })} /></Suspense>}
 
       {screen === "app" && session && (
         <div className="shell" style={{ marginTop: '40px' }}>
-          <div style={{ marginBottom: '32px' }}>
+          <div className="desktop-nav-links" style={{ marginBottom: '32px' }}>
             <SegmentedControl 
               segments={NAV[session.role].map(([k, label]) => ({ id: k as string, label: label as string }))}
               activeId={tab}
-              onChange={(id) => setTab(id)}
+              onChange={setTab} 
             />
           </div>
-          {session.role === "buyer" && <BuyerApp tab={tab} {...ctx} />}
-          {session.role === "seller" && <SellerApp tab={tab} {...ctx} />}
-          {session.role === "admin" && <AdminApp tab={tab} {...ctx} />}
+          <BottomNav tabs={BOTTOM_NAV[session.role]} activeId={tab} onChange={setTab} />
+          <Suspense fallback={<LazyFallback />}>
+            {session.role === "buyer" && <BuyerApp tab={tab} {...ctx} />}
+            {session.role === "seller" && <SellerApp tab={tab} {...ctx} />}
+            {session.role === "admin" && <AdminApp tab={tab} {...ctx} />}
+          </Suspense>
         </div>
       )}
 
-      {auth && <Auth init={auth} onClose={() => setAuth(null)} onDone={signIn} say={say} />}
-      <GooeyToaster position="top-center" />
+      <Suspense fallback={null}>
+        {auth && <Auth init={auth} onClose={() => setAuth(null)} onDone={signIn} say={say} />}
+      </Suspense>
+      <Toaster position="top-center" richColors closeButton duration={Infinity} />
     </div>
   );
 }

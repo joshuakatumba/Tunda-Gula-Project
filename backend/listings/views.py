@@ -29,6 +29,9 @@ class IsSellerOrReadOnly(permissions.BasePermission):
         return obj.seller == request.user
 
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+
 class ListingViewSet(viewsets.ModelViewSet):
     """
     /api/v1/listings/
@@ -39,6 +42,10 @@ class ListingViewSet(viewsets.ModelViewSet):
     DELETE → Remove listing (sellers only)
     """
     permission_classes = [IsSellerOrReadOnly]
+
+    @method_decorator(cache_page(60 * 5))
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
         qs = Listing.objects.filter(is_active=True).select_related("seller")
@@ -73,6 +80,20 @@ class ListingViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(seller=self.request.user, district=self.request.user.district)
+        self._bust_listing_cache()
+
+    def perform_update(self, serializer):
+        serializer.save()
+        self._bust_listing_cache()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        self._bust_listing_cache()
+
+    @staticmethod
+    def _bust_listing_cache():
+        from django.core.cache import cache
+        cache.clear()  # Simple invalidation — bust all cached pages
 
 
 class PreHarvestPlanViewSet(viewsets.ModelViewSet):
@@ -120,13 +141,14 @@ def seller_dashboard(request):
         status__in=[Order.Status.PLACED, Order.Status.ACCEPTED]
     )
 
+    from django.db.models import F
+
     # Revenue — sum of delivered orders
     delivered_orders = Order.objects.filter(seller=seller, status=Order.Status.DELIVERED)
-    gross = delivered_orders.aggregate(
-        total=Sum("quantity") * Sum("price_per_unit")
+    gross_agg = delivered_orders.aggregate(
+        total=Sum(F("quantity") * F("price_per_unit"))
     )
-    # Calculate correctly
-    gross_amount = sum(o.quantity * o.price_per_unit for o in delivered_orders)
+    gross_amount = gross_agg["total"] or 0
 
     # Ratings
     rating_stats = Rating.objects.filter(seller=seller).aggregate(

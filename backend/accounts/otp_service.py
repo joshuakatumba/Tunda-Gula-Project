@@ -5,6 +5,7 @@ accounts/otp_service.py — Service for OTP generation, persistence, and Twilio 
 import logging
 import secrets
 from datetime import timedelta
+# pyrefly: ignore [missing-import]
 from django.conf import settings
 from django.utils import timezone
 from twilio.rest import Client

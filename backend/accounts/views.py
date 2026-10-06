@@ -12,6 +12,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 # pyrefly: ignore [missing-import]
 from rest_framework.authtoken.models import Token
+# pyrefly: ignore [missing-import]
 from django.conf import settings as django_settings
 from notifications.sms import send_sms
 
@@ -55,6 +56,45 @@ class RegisterView(generics.CreateAPIView):
             {"token": token.key, "user": profile, "expires_at": _token_expires_at(token)},
             status=status.HTTP_201_CREATED,
         )
+
+
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def login_view(request):
+    """
+    POST /api/v1/accounts/login/
+    Standard email and password login flow.
+    Supports email or phone lookup.
+    """
+    identifier = request.data.get("email") or request.data.get("phone") or request.data.get("username")
+    password = request.data.get("password")
+
+    if not identifier:
+        return Response({"error": "Email address is required."}, status=status.HTTP_400_BAD_REQUEST)
+    if not password:
+        return Response({"error": "Password is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    identifier_str = str(identifier).strip()
+    user = User.objects.filter(email__iexact=identifier_str).first()
+    if not user:
+        clean_id = clean_phone(identifier_str)
+        if clean_id:
+            user = User.objects.filter(phone=clean_id).first()
+
+    if not user or not user.check_password(password):
+        return Response({"error": "Invalid email or password."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    if not user.is_active:
+        return Response({"error": "Account is disabled. Please contact support."}, status=status.HTTP_403_FORBIDDEN)
+
+    token, _ = Token.objects.get_or_create(user=user)
+    profile = UserProfileSerializer(user).data
+    return Response({
+        "message": "Login successful",
+        "token": token.key,
+        "user": profile,
+        "expires_at": _token_expires_at(token),
+    }, status=status.HTTP_200_OK)
 
 
 from . import otp_service
