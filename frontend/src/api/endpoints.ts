@@ -7,6 +7,7 @@
 
 export const ENDPOINTS = {
   // ── Auth ──────────────────────────────────────────────────────────
+  login:          "/accounts/login/",
   register:       "/accounts/register/",
   requestOtp:     "/accounts/otp/request/",
   verifyOtp:      "/accounts/otp/verify/",

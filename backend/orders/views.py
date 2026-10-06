@@ -22,12 +22,14 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        if not user.is_authenticated:
+            return Order.objects.none()
         if user.role == "admin":
-            return Order.objects.all().select_related("buyer", "seller", "rating")
+            return Order.objects.all().select_related("buyer", "seller", "rating", "listing", "harvest_plan")
         elif user.role == "seller":
-            return Order.objects.filter(seller=user).select_related("buyer", "rating")
+            return Order.objects.filter(seller=user).select_related("buyer", "rating", "listing", "harvest_plan")
         else:
-            return Order.objects.filter(buyer=user).select_related("seller", "rating")
+            return Order.objects.filter(buyer=user).select_related("seller", "rating", "listing", "harvest_plan")
 
     def get_serializer_class(self):
         if self.action == "create":

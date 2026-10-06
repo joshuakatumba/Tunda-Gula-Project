@@ -86,6 +86,10 @@ class Order(models.Model):
     class Meta:
         db_table = "tg_orders"
         ordering = ["-placed_at"]
+        indexes = [
+            models.Index(fields=["seller", "status"]),
+            models.Index(fields=["buyer", "status"]),
+        ]
 
     def __str__(self):
         return f"ORD-{self.pk} · {self.item_name} ({self.get_status_display()})"

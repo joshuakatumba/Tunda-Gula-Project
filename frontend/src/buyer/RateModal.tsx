@@ -7,6 +7,16 @@ export default function RateModal({ order, onClose, onSubmit }) {
   const [quality, setQuality] = useState(0);
   const [service, setService] = useState(0);
   const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const handleSubmit = async () => {
+    setBusy(true);
+    try {
+      await onSubmit(Math.round((quality + service) / 2));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const Stars = ({ value, set }: { value: number; set: (n: number) => void }) => (
     <div className="row" style={{ gap: "8px" }}>
@@ -54,10 +64,10 @@ export default function RateModal({ order, onClose, onSubmit }) {
       <Button
         variant="primary"
         style={{ width: "100%" }}
-        disabled={!quality || !service}
-        onClick={() => onSubmit(Math.round((quality + service) / 2))}
+        disabled={!quality || !service || busy}
+        onClick={handleSubmit}
       >
-        Submit rating
+        {busy ? "Submitting..." : "Submit rating"}
       </Button>
     </Modal>
   );

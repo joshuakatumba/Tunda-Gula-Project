@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { CATEGORIES, EMOJI, TINT } from "../data/categories";
 import { SEED_LISTINGS } from "../data/seedData";
 import { ugx } from "../utils/helpers";
@@ -9,6 +9,9 @@ import { Button } from "../components/ui/Button";
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
 import { Mic, Loader2 } from "lucide-react";
+import { SkeletonGrid } from "../components/ui/Skeleton";
+import { getCached } from "../utils/apiCache";
+import { useDebounce } from "../utils/debounce";
 
 function mapApiListing(l: any) {
   return {
@@ -39,7 +42,9 @@ export default function Marketplace({ f, setF, onOpen, cart, cartTotal, onChecko
   const [listings, setListings] = useState(SEED_LISTINGS);
   const [total, setTotal] = useState(SEED_LISTINGS.length);
   const [loading, setLoading] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // Only debounce the query parameter
+  const debouncedQ = useDebounce(f.q, 400);
 
   const fetchListings = useCallback(async (filters: typeof f) => {
     setLoading(true);
@@ -53,13 +58,12 @@ export default function Marketplace({ f, setF, onOpen, cart, cartTotal, onChecko
 
       const queryString = params.toString();
       const url = queryString ? `${ENDPOINTS.listings}?${queryString}` : ENDPOINTS.listings;
-      const res = await api.get(url);
+      const res = await getCached(url, 60000); // 1 minute cache
       const items = Array.isArray(res) ? res : res.results || [];
       setTotal(res.count ?? items.length);
 
       if (items.length > 0) {
         let mapped = items.map(mapApiListing);
-        // Client-side rating filter (backend does not support it)
         if (filters.minRating > 0) {
           mapped = mapped.filter(l => l.rating >= filters.minRating);
         }
@@ -74,17 +78,14 @@ export default function Marketplace({ f, setF, onOpen, cart, cartTotal, onChecko
     }
   }, []);
 
-  // Debounce filter changes — immediate for selects, delayed for text input
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    const delay = f.q ? 400 : 0;
-    debounceRef.current = setTimeout(() => fetchListings(f), delay);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [f, fetchListings]);
+    // We re-fetch when any non-q filter changes, or when the debounced q changes
+    fetchListings({ ...f, q: debouncedQ });
+  }, [f.cat, f.district, f.max, f.sort, f.minRating, debouncedQ, fetchListings]);
 
-  const districts = ["All", ...Array.from(new Set(listings.map(l => l.district)))].filter(Boolean);
+  const districts = useMemo(() => ["All", ...Array.from(new Set(listings.map(l => l.district)))].filter(Boolean), [listings]);
 
-  const shown = listings.filter(l => l.rating >= f.minRating);
+  const shown = useMemo(() => listings.filter(l => l.rating >= f.minRating), [listings, f.minRating]);
 
   return (
     <>
@@ -147,7 +148,9 @@ export default function Marketplace({ f, setF, onOpen, cart, cartTotal, onChecko
         </div>
       </div>
 
-      {shown.length === 0 && !loading ? (
+      {loading && shown.length === 0 ? (
+        <SkeletonGrid count={6} />
+      ) : shown.length === 0 && !loading ? (
         <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
           <h2 style={{ fontSize: "20px", fontWeight: 700, margin: "0 0 12px", color: "var(--color-obsidian)" }}>No listings found</h2>
           <Button variant="outline" onClick={() => setF({ q: "", cat: "All", district: "All", max: "", minRating: 0, sort: "relevance" })}>

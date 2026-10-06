@@ -37,19 +37,29 @@ services:
       retries: 5
 
   # ---------------------------------------------------------------------------
+  # Redis Cache
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: tundagula_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  # ---------------------------------------------------------------------------
   # Django Backend API
   # ---------------------------------------------------------------------------
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: tundagula_backend
     restart: unless-stopped
     env_file: .env
-    # The entrypoint in backend/Dockerfile handles migrations & superuser
-    ports:
-      - "8000:8000"
-      - "8001:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/1
+    # Scale to 2 instances for load balancing
+    deploy:
+      replicas: 2
     volumes:
       - ./backend:/app
       - media_data:/app/media
@@ -57,6 +67,22 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
+
+  # ---------------------------------------------------------------------------
+  # Nginx Load Balancer (for backend)
+  # ---------------------------------------------------------------------------
+  lb:
+    image: nginx:alpine
+    container_name: tundagula_lb
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
 
   # ---------------------------------------------------------------------------
   # React Frontend
@@ -67,7 +93,7 @@ services:
       dockerfile: Dockerfile
       args:
         # Pass the API URL to Vite during the build process
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8001/api/v1}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api/v1}
     container_name: tundagula_frontend
     restart: unless-stopped
     ports:

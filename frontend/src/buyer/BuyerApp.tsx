@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { ugx, dshort } from "../utils/helpers";
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
+import { formatApiError } from "../utils/errorHandler";
 import Marketplace from "./Marketplace";
 import ListingDetail from "./ListingDetail";
 import PreOrders from "./PreOrders";
@@ -19,18 +20,18 @@ export default function BuyerApp(props) {
   const [rating, setRating] = useState(null);
   const [f, setF] = useState({ q: "", cat: "All", district: "All", max: "", minRating: 0, sort: "relevance" });
 
-  const myOrders = orders.filter(o => o.buyerId === `B-${session?.id}` || o.buyerId === "B-01");
-  const cartTotal = cart.reduce((s, c) => s + c.qty * c.price, 0);
+  const myOrders = useMemo(() => orders.filter(o => o.buyerId === `B-${session?.id}` || o.buyerId === "B-01"), [orders, session?.id]);
+  const cartTotal = useMemo(() => cart.reduce((s, c) => s + c.qty * c.price, 0), [cart]);
 
-  const addToCart = (l, qty) => {
+  const addToCart = useCallback((l, qty) => {
     setCart(c => {
       const has = c.find(x => x.id === l.id);
       return has ? c.map(x => x.id === l.id ? { ...x, qty: x.qty + qty } : x) : [...c, { ...l, qty }];
     });
     say(`${qty} ${l.unit} ${l.name} added to your basket`);
-  };
+  }, [say]);
 
-  const pay = async (provider) => {
+  const pay = useCallback(async (provider) => {
     try {
       // Try to create orders via API and initiate payment
       for (const c of cart) {
@@ -58,7 +59,8 @@ export default function BuyerApp(props) {
 
       // Refresh data from API
       if (fetchData) fetchData();
-    } catch {
+    } catch (err) {
+      say(formatApiError(err));
       // Fallback to local state if API fails
       const base = 5515 + orders.filter(o => o.type === "order").length;
       const made = cart.map((c, i) => ({
@@ -73,9 +75,9 @@ export default function BuyerApp(props) {
       setCart([]); setCheckout(false);
       say(`Paid ${ugx(cartTotal)} with ${provider} Mobile Money`);
     }
-  };
+  }, [cart, session, fetchData, orders, pushSms, say, cartTotal]);
 
-  const placePreorder = async (plan, qty, provider) => {
+  const placePreorder = useCallback(async (plan, qty, provider) => {
     try {
       const planId = plan.id.replace("H-", "");
       const res = await api.post(ENDPOINTS.preorder, {
@@ -97,7 +99,8 @@ export default function BuyerApp(props) {
       setPreordering(null);
       say(`Deposit paid · ${qty} ${plan.unit} reserved`);
       if (fetchData) fetchData();
-    } catch {
+    } catch (err) {
+      say(formatApiError(err));
       // Fallback to local state
       const id = "PRE-" + (3302 + orders.filter(o => o.type === "preorder").length);
       setOrders(o => [{ id, type: "preorder", buyer: session.name, buyerId: `B-${session?.id || "01"}`, sellerId: plan.sellerId, seller: plan.seller,
@@ -107,37 +110,39 @@ export default function BuyerApp(props) {
       pushSms("Seller · " + plan.seller, `Pre-order: ${qty} ${plan.unit} ${plan.name} reserved by ${session.name}.`);
       setPreordering(null); say(`Deposit paid · ${qty} ${plan.unit} reserved`);
     }
-  };
+  }, [session, fetchData, orders, pushSms, say]);
 
-  const confirmReceipt = async (o) => {
+  const confirmReceipt = useCallback(async (o) => {
     try {
       const orderId = o.id.replace("ORD-", "");
       await api.post(ENDPOINTS.orderDeliver(orderId));
       if (fetchData) fetchData();
       setRating(o);
-    } catch {
+    } catch (err) {
+      say(formatApiError(err));
       // Fallback
       setOrders(os => os.map(x => x.id === o.id ? { ...x, status: "delivered" } : x));
       pushSms("Seller · " + o.seller, `${o.id} received. Payout of ${ugx(o.qty * o.price * (1 - commission / 100))} is on the way.`);
       setRating(o);
     }
-  };
+  }, [commission, fetchData, pushSms]);
 
-  const handleRate = async (stars) => {
+  const handleRate = useCallback(async (stars) => {
     try {
       const orderId = rating.id.replace("ORD-", "");
       await api.post(ENDPOINTS.orderRate(orderId), { stars });
       if (fetchData) fetchData();
       setRating(null);
       say("Thank you — your rating is now on the farmer's profile");
-    } catch {
+    } catch (err) {
+      say(formatApiError(err));
       // Fallback
       setOrders(os => os.map(x => x.id === rating.id ? { ...x, rated: true, stars } : x));
       setListings(ls => ls.map(l => l.sellerId === rating.sellerId
         ? { ...l, ratings: l.ratings + 1, rating: Math.round(((l.rating * l.ratings + stars) / (l.ratings + 1)) * 10) / 10 } : l));
       setRating(null); say("Thank you — your rating is now on the farmer's profile");
     }
-  };
+  }, [rating, say]);
 
   if (open) {
     const l = listings.find(x => x.id === open) || open;

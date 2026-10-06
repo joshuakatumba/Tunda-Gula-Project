@@ -2,8 +2,18 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tunda Gula</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" />
+    <meta name="description" content="TundaGula — Uganda's farm-to-table marketplace. Buy fresh produce directly from verified farmers at fair prices." />
+    <title>TundaGula — From Farm, to You</title>
+    <!-- Preconnect to external origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://unpkg.com" crossorigin />
+    <!-- Defer Boxicons CSS — non-critical stylesheet loaded after paint -->
+    <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" media="print" onload="this.media='all'" />
+    <!-- Prevent dark mode flash -->
+    <script>
+      (function(){var t=localStorage.getItem('tg-theme');if(t)document.documentElement.setAttribute('data-theme',t)})();
+    </script>
   </head>
   <body>
     <div id="root"></div>

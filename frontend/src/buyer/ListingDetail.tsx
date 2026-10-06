@@ -96,7 +96,7 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
             <div style={{ height: 320, background: "var(--color-fog)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 96 }}>
               {hasRealPhotos ? (
-                <img src={l.photos_data[shot]?.image} alt={l.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <img src={l.photos_data[shot]?.image} alt={l.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
                 <span>{EMOJI[l.cat]}</span>
               )}
@@ -118,7 +118,7 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
                         cursor: "pointer",
                       }}
                     >
-                      <img src={p.image} alt={`Photo ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={p.image} alt={`Photo ${i + 1}`} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </button>
                   ))
                 ) : (

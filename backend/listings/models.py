@@ -61,6 +61,10 @@ class Listing(models.Model):
     class Meta:
         db_table = "tg_listings"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["is_active", "category", "district"]),
+            models.Index(fields=["seller", "is_active"]),
+        ]
 
     def __str__(self):
         return f"{self.name} — {self.seller.name} ({self.district})"
@@ -84,6 +88,37 @@ class ListingPhoto(models.Model):
 
     def __str__(self):
         return f"Photo {self.order + 1} for {self.listing.name}"
+
+    def save(self, *args, **kwargs):
+        if not self.image:
+            return super().save(*args, **kwargs)
+            
+        from PIL import Image
+        import io
+        from django.core.files.base import ContentFile
+        
+        # Open the image using Pillow
+        img = Image.open(self.image)
+        
+        # Convert to RGB if necessary
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+            
+        # Resize if too large (max 1024x1024)
+        img.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+        
+        # Save to a bytes buffer
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=80, optimize=True)
+        output.seek(0)
+        
+        # Change filename extension to .jpg
+        import os
+        filename, _ = os.path.splitext(self.image.name)
+        new_filename = f"{filename}.jpg"
+        
+        self.image = ContentFile(output.read(), name=new_filename)
+        super().save(*args, **kwargs)
 
 
 class PreHarvestPlan(models.Model):

@@ -63,6 +63,7 @@ INSTALLED_APPS = [
 # ---------------------------------------------------------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",          # CORS — must be before CommonMiddleware
     "django.middleware.common.CommonMiddleware",
@@ -77,7 +78,7 @@ MIDDLEWARE = [
 # CORS — allow React dev server
 # ---------------------------------------------------------------------------
 CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ALLOWED_ORIGINS", "http://localhost:3002"
+    "CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3002"
 ).split(",")
 
 CORS_ALLOW_CREDENTIALS = True
@@ -124,6 +125,7 @@ if DB_ENGINE == "postgresql":
             "PASSWORD": os.environ.get("DB_PASSWORD", "tundagula"),
             "HOST": os.environ.get("DB_HOST", "db"),
             "PORT": os.environ.get("DB_PORT", "5432"),
+            "CONN_MAX_AGE": 600,  # 10 minutes connection pooling
         }
     }
 else:
@@ -238,4 +240,17 @@ else:
     MEDIA_ROOT = BASE_DIR / "media"
     DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
     FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+
+# ---------------------------------------------------------------------------
+# Caching (Redis)
+# ---------------------------------------------------------------------------
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 

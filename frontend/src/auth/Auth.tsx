@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/Button";
 import { Typography } from "../components/ui/Typography";
 import { Select } from "../components/ui/Select";
+import { formatApiError } from "../utils/errorHandler";
 
 /** Normalise a Ugandan phone number to +256XXXXXXXXX format */
 function formatPhone(phone: string): string {
@@ -19,22 +20,61 @@ function formatPhone(phone: string): string {
 }
 
 export default function Auth({ init, onClose, onDone, say }) {
-  const { requestOtp, verifyOtp, register } = useAuth();
+  const { login, requestOtp, verifyOtp, register } = useAuth();
+
+  const savedStateStr = sessionStorage.getItem("tg_auth_state");
+  const saved = savedStateStr ? JSON.parse(savedStateStr) : {};
 
   const [mode, setMode] = useState(init.mode);
-  const [role, setRole] = useState(init.role || null);
-  const [step, setStep] = useState(init.role ? "type" : "role");
-  const [type, setType] = useState(null);
-  const [d, setD] = useState({ name: "", nin: "", phone: "", district: "Wakiso", email: "" });
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [gps, setGps] = useState(null);
-  const [manual, setManual] = useState("");
-  const [verificationToken, setVerificationToken] = useState("");
+  const [role, setRole] = useState(init.role || saved.role || null);
+  const [step, setStep] = useState(init.role ? (init.role === "admin" ? "details" : "type") : (saved.step || "role"));
+  const [type, setType] = useState(saved.type || null);
+  const [d, setD] = useState(saved.d || { name: "", nin: "", phone: "", district: "Wakiso", email: "", password: "" });
+  const [loginWithOtp, setLoginWithOtp] = useState(saved.loginWithOtp || false);
+  const [otp, setOtp] = useState(saved.otp || ["", "", "", "", "", ""]);
+  const [gps, setGps] = useState(saved.gps || null);
+  const [manual, setManual] = useState(saved.manual || "");
+  const [verificationToken, setVerificationToken] = useState(saved.verificationToken || "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  React.useEffect(() => {
+    sessionStorage.setItem("tg_auth_state", JSON.stringify({
+      role, step, type, d, loginWithOtp, otp, gps, manual, verificationToken
+    }));
+  }, [role, step, type, d, loginWithOtp, otp, gps, manual, verificationToken]);
+
+  React.useEffect(() => {
+    const handleFocus = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT") {
+        setTimeout(() => target.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+      }
+    };
+    window.addEventListener("focusin", handleFocus);
+    return () => window.removeEventListener("focusin", handleFocus);
+  }, []);
+
   const otpOk = otp.join("").length === 6;
   const DISTRICTS = ["Wakiso", "Kampala", "Mukono", "Mpigi", "Luweero", "Nakaseke", "Buikwe", "Mityana"];
+
+  const handleLogin = async () => {
+    if (!d.email || !d.password) {
+      setError("Please enter your email and password.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const loggedInUser = await login(d.email.trim(), d.password);
+      say(`Welcome back, ${loggedInUser.name}`);
+      onDone(loggedInUser);
+    } catch (err: any) {
+      setError(formatApiError(err));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const handleRequestOtp = async () => {
     setBusy(true);
@@ -44,7 +84,7 @@ export default function Auth({ init, onClose, onDone, say }) {
       setStep("otp");
       say("Code sent! Check your phone.");
     } catch (err: any) {
-      setError(err.data?.error || err.message || "Failed to send code");
+      setError(formatApiError(err));
     } finally {
       setBusy(false);
     }
@@ -70,7 +110,7 @@ export default function Auth({ init, onClose, onDone, say }) {
         }
       }
     } catch (err: any) {
-      setError(err.data?.error || err.message || "Invalid code");
+      setError(formatApiError(err));
     } finally {
       setBusy(false);
     }
@@ -83,8 +123,10 @@ export default function Auth({ init, onClose, onDone, say }) {
     const token = tokenOverride || verificationToken;
     try {
       await register({
-        phone: formatPhone(d.phone),
+        ...(d.phone ? { phone: formatPhone(d.phone) } : {}),
         name: d.name,
+        email: d.email,
+        password: d.password,
         role,
         ...(token ? { verification_token: token } : {}),
         ...(role === "seller" ? {
@@ -100,17 +142,10 @@ export default function Auth({ init, onClose, onDone, say }) {
       });
       say(role === "seller"
         ? "Account created. Your verification is with an administrator — you will get an SMS within 24 hours."
-        : "Account created. You can start ordering now.");
+        : "Account created. You can start exploring now.");
       onDone();
     } catch (err: any) {
-      const data = err.data;
-      if (data && typeof data === "object") {
-        const firstField = Object.keys(data)[0];
-        const msg = Array.isArray(data[firstField]) ? data[firstField][0] : data[firstField];
-        setError(`${firstField}: ${msg}`);
-      } else {
-        setError(err.message || "Registration failed");
-      }
+      setError(formatApiError(err));
     } finally {
       setBusy(false);
     }
@@ -121,30 +156,62 @@ export default function Auth({ init, onClose, onDone, say }) {
     return (
       <Modal title="Log in" onClose={onClose}>
         {error && <div className="sms" style={{ color: "#A3320B", background: "#FFF0EC" }}>{error}</div>}
-        <Field label="Phone number"><input placeholder="0772 000 000" value={d.phone} onChange={e => setD({ ...d, phone: e.target.value })} /></Field>
-        {step === "otp" ? (
+
+        {loginWithOtp ? (
           <>
-            <Field label="Enter the 6-digit code">
-              <div className="otp">
-                {otp.map((v, i) => (
-                  <input key={i} maxLength={1} value={v} inputMode="numeric"
-                    onChange={e => { const n = [...otp]; n[i] = e.target.value.replace(/\D/, ""); setOtp(n);
-                      if (e.target.value && e.target.nextSibling) (e.target.nextSibling as HTMLElement).focus(); }} />
-                ))}
-              </div>
+            <Field label="Phone number">
+              <input placeholder="0772 000 000" value={d.phone} onChange={e => setD({ ...d, phone: e.target.value })} />
             </Field>
-            <Button variant="primary" disabled={!otpOk || busy} onClick={handleVerifyOtp}>
-              {busy ? <Loader2 size="1em" className="spin" /> : "Verify and log in"}
-            </Button>
+            {step === "otp" ? (
+              <>
+                <Field label="Enter the 6-digit code">
+                  <div className="otp">
+                    {otp.map((v, i) => (
+                      <input key={i} maxLength={1} value={v} inputMode="numeric"
+                        onChange={e => { const n = [...otp]; n[i] = e.target.value.replace(/\D/, ""); setOtp(n);
+                          if (e.target.value && e.target.nextSibling) (e.target.nextSibling as HTMLElement).focus(); }} />
+                    ))}
+                  </div>
+                </Field>
+                <Button variant="primary" disabled={!otpOk || busy} onClick={handleVerifyOtp}>
+                  {busy ? <Loader2 size="1em" className="spin" /> : "Verify and log in"}
+                </Button>
+              </>
+            ) : (
+              <Button variant="primary" disabled={!d.phone || busy} onClick={handleRequestOtp}>
+                {busy ? <Loader2 size="1em" className="spin" /> : "Send me a code"}
+              </Button>
+            )}
+            <div style={{ textAlign: "center", marginTop: 12 }}>
+              <Button variant="text" onClick={() => { setLoginWithOtp(false); setError(""); }}>
+                Log in with email & password instead
+              </Button>
+            </div>
           </>
         ) : (
-          <Button variant="primary" disabled={!d.phone || busy} onClick={handleRequestOtp}>
-            {busy ? <Loader2 size="1em" className="spin" /> : "Send me a code"}
-          </Button>
+          <>
+            <Field label="Email address">
+              <input type="email" placeholder="you@example.com" value={d.email} onChange={e => setD({ ...d, email: e.target.value })} />
+            </Field>
+            <Field label="Password">
+              <input type="password" placeholder="••••••••" value={d.password} onChange={e => setD({ ...d, password: e.target.value })} />
+            </Field>
+            <Button variant="primary" disabled={!d.email || !d.password || busy} onClick={handleLogin}>
+              {busy ? <Loader2 size="1em" className="spin" /> : "Log in"}
+            </Button>
+            <div style={{ textAlign: "center", marginTop: 12 }}>
+              <Button variant="text" onClick={() => { setLoginWithOtp(true); setError(""); }}>
+                Farmer? Log in with SMS code
+              </Button>
+            </div>
+          </>
         )}
+
         <div className="rule" />
-        <div className="row"><span className="hint">No account yet?</span>
-          <Button variant="text" onClick={() => { setMode("join"); setStep("role"); setError(""); }}>Register instead</Button></div>
+        <div className="row">
+          <span className="hint">No account yet?</span>
+          <Button variant="text" onClick={() => { setMode("join"); setStep("role"); setError(""); }}>Register instead</Button>
+        </div>
       </Modal>
     );
   }
@@ -183,26 +250,62 @@ export default function Auth({ init, onClose, onDone, say }) {
 
       {step === "details" && role === "admin" && (
         <>
-          <Field label="Staff email"><input value={d.email} placeholder="name@tundagula.ug" onChange={e => setD({ ...d, email: e.target.value })} /></Field>
-          <Field label="Phone number"><input value={d.phone} placeholder="0772 000 000" onChange={e => setD({ ...d, phone: e.target.value })} /></Field>
-          <Field label="Access code"><input type="password" placeholder="••••••" /></Field>
-          <Button variant="primary" disabled={!d.email || !d.phone || busy} onClick={() => {
-            setD({ ...d, name: d.email.split("@")[0] });
-            handleRequestOtp();
-          }}>{busy ? <Loader2 size="1em" className="spin" /> : "Send verification code"}</Button>
+          <Field label="Staff email">
+            <input type="email" value={d.email} placeholder="name@tundagula.ug" onChange={e => setD({ ...d, email: e.target.value })} />
+          </Field>
+          <Field label="Full name">
+            <input value={d.name} placeholder="Staff Name" onChange={e => setD({ ...d, name: e.target.value })} />
+          </Field>
+          <Field label="Password">
+            <input type="password" placeholder="•••••••• (min 6 characters)" value={d.password} onChange={e => setD({ ...d, password: e.target.value })} />
+          </Field>
+          <Field label="Phone number (optional)">
+            <input value={d.phone} placeholder="0772 000 000" onChange={e => setD({ ...d, phone: e.target.value })} />
+          </Field>
+          {/* OTP verification is commented out for Admin; direct database registration */}
+          <Button variant="primary" disabled={!d.email || !d.password || busy} onClick={() => handleRegister()}>
+            {busy ? <Loader2 size="1em" className="spin" /> : "Create administrator account"}
+          </Button>
         </>
       )}
 
-      {step === "details" && role !== "admin" && (
+      {step === "details" && role === "buyer" && (
         <>
-          <Field label={role === "seller" ? "Full name, as on your national ID" : "Name or business name"}>
-            <input value={d.name} placeholder={role === "seller" ? "David Ssemakula" : "Nakato Catering"} onChange={e => setD({ ...d, name: e.target.value })} />
+          <Field label="Name or business name">
+            <input value={d.name} placeholder="Nakato Catering" onChange={e => setD({ ...d, name: e.target.value })} />
           </Field>
-          {role === "seller" && (
-            <Field label="National ID number (NIN)">
-              <input value={d.nin} placeholder="CF9204119XKJ2E" onChange={e => setD({ ...d, nin: e.target.value.toUpperCase() })} />
-            </Field>
-          )}
+          <Field label="Email address">
+            <input type="email" value={d.email} placeholder="nakato@example.com" onChange={e => setD({ ...d, email: e.target.value })} />
+          </Field>
+          <Field label="Password">
+            <input type="password" placeholder="•••••••• (min 6 characters)" value={d.password} onChange={e => setD({ ...d, password: e.target.value })} />
+          </Field>
+          <Field label="Mobile money / contact phone (optional)">
+            <input value={d.phone} placeholder="0772 000 000" onChange={e => setD({ ...d, phone: e.target.value })} />
+          </Field>
+          <Field label="District">
+            <Select
+              value={d.district}
+              onChange={val => setD({ ...d, district: val })}
+              options={DISTRICTS}
+              grid={true}
+            />
+          </Field>
+          {/* OTP verification is commented out for Buyer; direct database registration */}
+          <Button variant="primary" disabled={!d.name || !d.email || !d.password || busy} onClick={() => handleRegister()}>
+            {busy ? <Loader2 size="1em" className="spin" /> : "Complete registration"}
+          </Button>
+        </>
+      )}
+
+      {step === "details" && role === "seller" && (
+        <>
+          <Field label="Full name, as on your national ID">
+            <input value={d.name} placeholder="David Ssemakula" onChange={e => setD({ ...d, name: e.target.value })} />
+          </Field>
+          <Field label="National ID number (NIN)">
+            <input value={d.nin} placeholder="CF9204119XKJ2E" onChange={e => setD({ ...d, nin: e.target.value.toUpperCase() })} />
+          </Field>
           <Field label="Mobile money number">
             <input value={d.phone} placeholder="0772 000 000" onChange={e => setD({ ...d, phone: e.target.value })} />
           </Field>
@@ -214,13 +317,9 @@ export default function Auth({ init, onClose, onDone, say }) {
               grid={true}
             />
           </Field>
-          <Button variant="primary" disabled={!d.name || !d.phone || (role === "seller" && !d.nin) || busy} onClick={() => {
+          <Button variant="primary" disabled={!d.name || !d.phone || !d.nin || busy} onClick={() => {
             if (verificationToken) {
-              if (role === "seller") {
-                setStep("gps");
-              } else {
-                handleRegister();
-              }
+              setStep("gps");
             } else {
               handleRequestOtp();
             }
@@ -247,7 +346,7 @@ export default function Auth({ init, onClose, onDone, say }) {
               await requestOtp(formatPhone(d.phone));
               say("New code sent.");
             } catch (err: any) {
-              setError(err.data?.error || err.message || "Failed to resend code");
+              setError(formatApiError(err));
             }
           }}>Send the code again</Button>
           <Button variant="primary" disabled={!otpOk || busy} onClick={async () => {
@@ -270,7 +369,7 @@ export default function Auth({ init, onClose, onDone, say }) {
                 }
               }
             } catch (err: any) {
-              setError(err.data?.error || err.message || "Invalid code");
+              setError(formatApiError(err));
             } finally {
               setBusy(false);
             }

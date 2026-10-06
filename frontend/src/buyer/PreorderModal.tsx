@@ -7,8 +7,18 @@ import { Button } from "../components/ui/Button";
 export default function PreorderModal({ plan, onClose, onPay }) {
   const [qty, setQty] = useState(50);
   const [provider, setProvider] = useState("MTN");
+  const [busy, setBusy] = useState(false);
   const left = plan.qty - plan.reserved;
   const deposit = (qty * plan.price * plan.deposit) / 100;
+
+  const handlePay = async () => {
+    setBusy(true);
+    try {
+      await onPay(plan, qty, provider);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <Modal title="Reserve harvest" onClose={onClose}>
@@ -66,9 +76,10 @@ export default function PreorderModal({ plan, onClose, onPay }) {
       <Button
         variant="primary"
         style={{ width: "100%" }}
-        onClick={() => onPay(plan, qty, provider)}
+        disabled={busy}
+        onClick={handlePay}
       >
-        Pay deposit · {ugx(deposit)}
+        {busy ? "Processing..." : `Pay deposit · ${ugx(deposit)}`}
       </Button>
     </Modal>
   );

@@ -33,7 +33,7 @@ export const GridItem: React.FC<GridItemProps> = ({ iconUrl, fallbackInitial, ti
         border: '1px solid var(--color-pebble)'
       }}>
         {iconUrl ? (
-          <img src={iconUrl} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <img src={iconUrl} alt={title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
           <span style={{ fontSize: '20px', fontWeight: 600, color: 'var(--color-forest-ink)' }}>
             {fallbackInitial}
