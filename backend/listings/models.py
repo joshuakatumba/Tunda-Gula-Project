@@ -49,6 +49,7 @@ class Listing(models.Model):
     # --- Media (from ListingForm.tsx) ---
     voice_duration = models.PositiveIntegerField(default=0, help_text="Voice note duration in seconds")
     voice_file = models.FileField(upload_to="listings/voice/", blank=True)
+    thumbnail = models.ImageField(upload_to="listings/thumbnails/", blank=True, null=True, help_text="Product Thumbnail Image")
 
     # --- Location (inherited from seller, but can override) ---
     district = models.CharField(max_length=100)
@@ -72,6 +73,25 @@ class Listing(models.Model):
     @property
     def is_sold_out(self):
         return self.quantity <= 0
+
+    def save(self, *args, **kwargs):
+        # Only process freshly uploaded thumbnails (not already-stored files)
+        if self.thumbnail and not getattr(self.thumbnail, "_committed", True):
+            import io
+            import os
+            from PIL import Image, ImageOps
+            from django.core.files.base import ContentFile
+
+            img = Image.open(self.thumbnail)
+            img = ImageOps.exif_transpose(img)  # respect phone orientation
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            img.thumbnail((800, 800), Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            img.save(buf, format="JPEG", quality=82, optimize=True)
+            base, _ = os.path.splitext(os.path.basename(self.thumbnail.name))
+            self.thumbnail = ContentFile(buf.getvalue(), name=f"{base}.jpg")
+        super().save(*args, **kwargs)
 
 
 class ListingPhoto(models.Model):

@@ -1,0 +1,50 @@
+# =============================================================================
+# TundaGula Backend .gitignore
+# =============================================================================
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+ENV/
+venv.bak/
+env.bak/
+
+# Environment files & secrets
+.env
+.env.*
+.env.example
+*.pem
+*.key
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# SQLite & Databases
+db.sqlite3
+*.sqlite3
+db.sqlite3-journal
+
+# Media uploads & static files
+media/
+staticfiles/
+
+# Documentation & markdown
+*.md
+!README.md
+!readme.md
+
+# IDE & OS
+.vscode/
+.idea/
+*.sublime-*
+.DS_Store
+Thumbs.db

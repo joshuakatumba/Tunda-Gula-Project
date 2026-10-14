@@ -12,7 +12,7 @@ export const Stat: React.FC<StatProps> = ({ label, value, sub }) => (
       background: "var(--color-paper)",
       border: "1px solid var(--color-fog)",
       borderRadius: "var(--radius-cards)",
-      padding: "24px",
+      padding: "var(--card-pad)",
       boxShadow: "var(--shadow-subtle)",
       display: "flex",
       flexDirection: "column",
@@ -29,7 +29,7 @@ export const Stat: React.FC<StatProps> = ({ label, value, sub }) => (
     </div>
     <div style={{
       fontFamily: "var(--font-inter)",
-      fontSize: "28px",
+      fontSize: "var(--fs-stat)",
       fontWeight: 700,
       color: "var(--color-obsidian)",
       letterSpacing: "-0.3px",

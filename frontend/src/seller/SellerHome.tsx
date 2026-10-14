@@ -25,28 +25,28 @@ export default function SellerHome({ session, mine, myOrders, gross, commission,
     api.get<DashStats>(ENDPOINTS.sellerDashboard)
       .then(setStats)
       .catch(() => { /* fall back to props */ });
-  }, []);
+  }, [session?.id]);
 
   const activeCount = stats?.active_listings ?? mine.filter(l => l.qty > 0).length;
   const totalListings = stats?.total_listings ?? mine.length;
   const ordersCount = stats?.orders_this_month ?? myOrders.length;
   const pendingCount = stats?.pending_orders ?? myOrders.filter(o => o.status !== "delivered").length;
   const grossRevenue = stats?.gross_revenue ?? gross;
-  const avgRating = stats ? `${stats.avg_rating} ★` : "4.7 ★";
-  const ratingCount = stats?.rating_count ?? 38;
+  const ratingCount = stats?.rating_count ?? 0;
+  const avgRating = stats && ratingCount > 0 ? `${stats.avg_rating} ★` : (ratingCount > 0 ? "5.0 ★" : "No ratings");
 
   return (
     <>
       <Head title="Seller Overview" />
 
       <div className="row" style={{ marginBottom: 20, gap: 8 }}>
-        <Badge tone={stats?.is_verified ? "b-green" : "default"}>
-          {stats?.is_verified ? "Verified farmer" : "Pending verification"}
+        <Badge tone={stats?.is_verified ?? session?.is_verified ? "b-green" : "default"}>
+          {stats?.is_verified ?? session?.is_verified ? "Verified farmer" : "Pending verification"}
         </Badge>
         {activeCount > 0 && <Badge tone="b-maize">Active seller</Badge>}
       </div>
 
-      <div className="grid g4">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
         <Stat label="Active listings" value={activeCount} sub={`${totalListings} total`} />
         <Stat label="Orders this month" value={ordersCount} sub={`${pendingCount} pending`} />
         <Stat label="Earned (gross)" value={ugx(grossRevenue)} sub={`${commission}% commission`} />
@@ -71,7 +71,7 @@ export default function SellerHome({ session, mine, myOrders, gross, commission,
                   </div>
                   {o.type === "order" && (
                     <button className="btn-sm" onClick={() => advance(o)}>
-                      {o.status === "accepted" ? "Start delivery" : "Mark delivered"}
+                      {o.status === "placed" ? "Accept order" : o.status === "accepted" ? "Start delivery" : "Confirm delivered"}
                     </button>
                   )}
                 </div>

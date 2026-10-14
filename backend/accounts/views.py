@@ -21,6 +21,16 @@ def _token_expires_at(token):
     """Compute when a token expires based on SESSION_TOKEN_LIFETIME."""
     lifetime = getattr(django_settings, "SESSION_TOKEN_LIFETIME", timedelta(days=7))
     return (token.created + lifetime).isoformat()
+
+
+def _get_fresh_token(user):
+    """Return a valid token for the user, replacing any expired one."""
+    lifetime = getattr(django_settings, "SESSION_TOKEN_LIFETIME", timedelta(days=7))
+    token = Token.objects.filter(user=user).first()
+    if token and lifetime and timezone.now() > token.created + lifetime:
+        token.delete()
+        token = None
+    return token or Token.objects.create(user=user)
 from .models import User, OTP
 from .utils import (
     clean_phone,
@@ -87,7 +97,7 @@ def login_view(request):
     if not user.is_active:
         return Response({"error": "Account is disabled. Please contact support."}, status=status.HTTP_403_FORBIDDEN)
 
-    token, _ = Token.objects.get_or_create(user=user)
+    token = _get_fresh_token(user)
     profile = UserProfileSerializer(user).data
     return Response({
         "message": "Login successful",
@@ -116,7 +126,7 @@ def send_otp_view(request):
     if not raw_phone:
         return Response({"error": "Phone number is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    success, message, code = otp_service.send_otp(raw_phone)
+    success, message, code = otp_service.send_otp(raw_phone, request=request)
     if not success:
         return Response({"error": message}, status=code)
 
@@ -160,7 +170,7 @@ def verify_otp_view(request):
             return Response({"error": "Account is disabled. Please contact support."}, status=status.HTTP_403_FORBIDDEN)
         user.otp_verified = True
         user.save(update_fields=["otp_verified"])
-        token, _ = Token.objects.get_or_create(user=user)
+        token = _get_fresh_token(user)
         profile = UserProfileSerializer(user).data
         return Response({
             "message": "OTP verified successfully",
@@ -203,10 +213,43 @@ class PendingVerificationsView(generics.ListAPIView):
     serializer_class = PendingVerificationSerializer
     permission_classes = [permissions.IsAdminUser]
 
+    def _wants_verified(self):
+        value = self.request.query_params.get("is_verified")
+        return value is not None and value.lower() in ("true", "1")
+
+    @property
+    def paginator(self):
+        # Map consumers need every verified farmer, not just page 1.
+        if self._wants_verified():
+            return None
+        return super().paginator
+
     def get_queryset(self):
+        if self._wants_verified():
+            return User.objects.filter(
+                role="seller", is_verified=True,
+                gps_lat__isnull=False, gps_lng__isnull=False,
+            ).order_by("-id")
         return User.objects.filter(role="seller", is_verified=False).exclude(
             verification_submitted_at=None
         ).order_by("-verification_submitted_at")
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAdminUser])
+def toggle_active(request, pk):
+    """POST /api/v1/accounts/<id>/toggle-active/ — Admin suspends or reactivates an account."""
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+    if user.pk == request.user.pk or user.is_staff:
+        return Response({"error": "Staff accounts cannot be suspended here."}, status=status.HTTP_400_BAD_REQUEST)
+    user.is_active = not user.is_active
+    user.save(update_fields=["is_active"])
+    if not user.is_active:
+        Token.objects.filter(user=user).delete()
+    return Response({"id": user.pk, "is_active": user.is_active})
 
 
 @api_view(["POST"])
@@ -289,3 +332,52 @@ def logout_all(request):
     return Response({
         "message": f"Logged out from all devices. {deleted_count} session(s) ended."
     }, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAdminUser])
+def admin_platform_stats(request):
+    """
+    GET /api/v1/accounts/admin/stats/
+    Returns real-time dynamic platform KPIs for AdminOverview.
+    """
+    from orders.models import Order
+    from payments.models import PlatformSettings
+    from django.db.models import Sum, F
+
+    settings = PlatformSettings.load()
+    commission_rate = settings.commission_rate
+    default_deposit = settings.default_deposit_percentage
+
+    paid_orders = Order.objects.filter(status=Order.Status.DELIVERED)
+    gmv_agg = paid_orders.aggregate(total=Sum(F("quantity") * F("price_per_unit")))
+    gmv = gmv_agg["total"] or 0
+    platform_revenue = int(gmv * (commission_rate / 100))
+
+    total_orders = Order.objects.count()
+    verified_sellers = User.objects.filter(role="seller", is_verified=True).count()
+    pending_sellers = User.objects.filter(role="seller", is_verified=False).count()
+    total_buyers = User.objects.filter(role="buyer").count()
+
+    # Dynamic weekly volume (last 4 calendar weeks)
+    now = timezone.now()
+    weekly_volume = []
+    for i in range(3, -1, -1):
+        start_w = now - timedelta(days=(i + 1) * 7)
+        end_w = now - timedelta(days=i * 7)
+        w_num = (now - timedelta(days=i * 7)).isocalendar()[1]
+        cnt = Order.objects.filter(placed_at__gte=start_w, placed_at__lt=end_w).count()
+        weekly_volume.append({"week": w_num, "count": cnt})
+
+    return Response({
+        "gmv": gmv,
+        "platform_revenue": platform_revenue,
+        "commission_rate": commission_rate,
+        "default_deposit": default_deposit,
+        "total_orders": total_orders,
+        "verified_sellers": verified_sellers,
+        "pending_sellers": pending_sellers,
+        "total_buyers": total_buyers,
+        "weekly_volume": weekly_volume,
+    })
+

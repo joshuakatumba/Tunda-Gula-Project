@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Camera, Mic, Square, MapPin, Loader2, X } from "lucide-react";
 import { CATEGORIES } from "../data/categories";
 import { Modal } from "../components/Modal";
@@ -7,11 +7,15 @@ import { Button } from "../components/ui/Button";
 import { Select } from "../components/ui/Select";
 
 // Use raw fetch for multipart/form-data — the api client sets Content-Type: application/json
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8001/api/v1";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+
+// Same district list used at registration (auth/Auth.tsx)
+const DISTRICTS = ["Wakiso", "Kampala", "Mukono", "Mpigi", "Luweero", "Nakaseke", "Buikwe", "Mityana"];
 
 export default function ListingForm({ onClose, onSave }) {
-  const [d, setD] = useState({ name: "", cat: "Vegetables", qty: 100, unit: "kg", price: 2000, note: "" });
+  const [d, setD] = useState({ name: "", cat: "Vegetables", qty: 100, unit: "kg", price: 2000, note: "", district: "Wakiso", lat: "", lng: "" });
   const [photos, setPhotos] = useState<File[]>([]);
+  const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
   const [voiceDuration, setVoiceDuration] = useState(0);
   const [rec, setRec] = useState(false);
@@ -23,6 +27,11 @@ export default function ListingForm({ onClose, onSave }) {
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Create the preview URL once per selected file and release it when replaced/unmounted
+  const thumbnailUrl = useMemo(() => (thumbnail ? URL.createObjectURL(thumbnail) : null), [thumbnail]);
+  useEffect(() => () => { if (thumbnailUrl) URL.revokeObjectURL(thumbnailUrl); }, [thumbnailUrl]);
 
   useEffect(() => {
     if (rec) {
@@ -63,6 +72,14 @@ export default function ListingForm({ onClose, onSave }) {
       const newPhotos = Array.from(e.target.files).slice(0, 5 - photos.length);
       setPhotos(prev => [...prev, ...newPhotos]);
     }
+    e.target.value = ""; // allow re-selecting the same file
+  };
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setThumbnail(e.target.files[0]);
+    }
+    e.target.value = ""; // allow re-selecting the same file
   };
 
   const removePhoto = (index: number) => {
@@ -81,8 +98,14 @@ export default function ListingForm({ onClose, onSave }) {
       form.append("unit", d.unit);
       form.append("price", String(d.price));
       form.append("description", d.note);
+      form.append("district", d.district || "Wakiso");
       form.append("voice_duration", String(voiceDuration));
+      if (d.lat && d.lng) {
+        form.append("latitude", d.lat);
+        form.append("longitude", d.lng);
+      }
 
+      if (thumbnail) form.append("thumbnail", thumbnail);
       photos.forEach(photo => form.append("photo_files", photo));
       if (voiceBlob) form.append("voice_file", voiceBlob, "voice_note.webm");
 
@@ -107,7 +130,20 @@ export default function ListingForm({ onClose, onSave }) {
   };
 
   return (
-    <Modal title="List produce" onClose={onClose}>
+    <Modal 
+      title="List produce" 
+      onClose={onClose}
+      footer={
+        <Button
+          variant="primary"
+          block
+          disabled={!d.name || busy}
+          onClick={handleSave}
+        >
+          {busy ? <Loader2 size={16} className="spin" /> : "Publish listing"}
+        </Button>
+      }
+    >
       {error && (
         <div style={{ color: "var(--color-alarm-red)", background: "#FCE8E8", padding: "12px 16px", borderRadius: "var(--radius-cards)", fontSize: "13px" }}>
           {error}
@@ -124,7 +160,8 @@ export default function ListingForm({ onClose, onSave }) {
           grid={true}
         />
       </Field>
-      <div className="grid g3">
+      
+      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         <Field label="Quantity">
           <input type="number" value={d.qty} onChange={e => setD({ ...d, qty: Number(e.target.value) })} />
         </Field>
@@ -140,8 +177,52 @@ export default function ListingForm({ onClose, onSave }) {
           <input type="number" value={d.price} onChange={e => setD({ ...d, price: Number(e.target.value) })} />
         </Field>
       </div>
+
+      <Field label="District">
+        <Select
+          value={d.district}
+          onChange={val => setD({ ...d, district: val })}
+          options={DISTRICTS}
+          grid={false}
+        />
+      </Field>
       <Field label="Description">
         <textarea rows={2} value={d.note} placeholder="Add details..." onChange={e => setD({ ...d, note: e.target.value })} />
+      </Field>
+
+      {/* Thumbnail */}
+      <Field label="Product Thumbnail">
+        <div className="row" style={{ gap: 8 }}>
+          {thumbnail ? (
+            <div style={{ position: "relative" }}>
+              <img
+                src={thumbnailUrl ?? undefined}
+                alt="Thumbnail"
+                style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8, border: "2px solid var(--color-lime-voltage)" }}
+              />
+              <button
+                type="button"
+                onClick={() => setThumbnail(null)}
+                style={{
+                  position: "absolute", top: -6, right: -6, background: "var(--color-alarm-red)", color: "#fff", border: "none",
+                  borderRadius: "50%", width: 18, height: 18, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >
+                <X size={10} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn-sm"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+              onClick={() => thumbnailInputRef.current?.click()}
+            >
+              <Camera size={14} /> Upload Thumbnail
+            </button>
+          )}
+        </div>
+        <input ref={thumbnailInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleThumbnailChange} />
       </Field>
 
       {/* Photos */}
@@ -236,7 +317,10 @@ export default function ListingForm({ onClose, onSave }) {
             style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
             onClick={() => {
               navigator.geolocation?.getCurrentPosition(
-                pos => setGps(`${pos.coords.latitude.toFixed(4)}°N, ${pos.coords.longitude.toFixed(4)}°E`),
+                pos => {
+                  setGps(`${pos.coords.latitude.toFixed(4)}°N, ${pos.coords.longitude.toFixed(4)}°E`);
+                  setD(prev => ({ ...prev, lat: String(pos.coords.latitude), lng: String(pos.coords.longitude) }));
+                },
                 () => setGps("Location pinned to district")
               );
             }}
@@ -248,15 +332,6 @@ export default function ListingForm({ onClose, onSave }) {
           </span>
         </div>
       </Field>
-
-      <Button
-        variant="primary"
-        style={{ width: "100%", marginTop: "8px" }}
-        disabled={!d.name || busy}
-        onClick={handleSave}
-      >
-        {busy ? <Loader2 size={16} className="spin" /> : "Publish listing"}
-      </Button>
     </Modal>
   );
 }

@@ -8,7 +8,7 @@
  *  - Provides typed get/post/patch/delete helpers
  */
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL || (typeof window !== "undefined" ? "/api/v1" : "http://localhost:8000/api/v1");
 
 /** Callback set by AuthContext to clear session on 401 */
 let onUnauthorized: (() => void) | null = null;
@@ -26,8 +26,12 @@ export function setTokenRefreshHandler(handler: () => Promise<boolean>) {
   onTokenRefresh = handler;
 }
 
+/** Public endpoints: must never carry a (possibly stale) auth token */
+const PUBLIC_PATHS = ["/accounts/login/", "/accounts/register/", "/accounts/otp/request/", "/accounts/otp/verify/", "/market/prices/"];
+
 async function request<T = any>(path: string, options?: RequestInit): Promise<T> {
-  const token = localStorage.getItem("tg_token");
+  const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
+  const token = isPublic ? null : localStorage.getItem("tg_token");
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -91,4 +95,22 @@ export const api = {
 
   delete: <T = any>(path: string) =>
     request<T>(path, { method: "DELETE" }),
+
+  /** Download an authenticated file (e.g. CSV) and trigger a browser save. */
+  download: async (path: string, filename: string) => {
+    const token = localStorage.getItem("tg_token");
+    const res = await fetch(`${API_URL}${path}`, {
+      headers: token ? { Authorization: `Token ${token}` } : {},
+    });
+    if (!res.ok) throw new Error(res.status === 403 ? "You are not allowed to export this." : "Export failed. Please try again.");
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
 };

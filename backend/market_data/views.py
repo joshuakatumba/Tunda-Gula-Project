@@ -1,12 +1,14 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, viewsets
 from .models import ReferencePrice, Category
 from .serializers import ReferencePriceSerializer, CategorySerializer
-
 
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 
-@method_decorator(cache_page(60 * 60), name='dispatch')
+
+# Prices are the "live" ticker — keep the server cache very short so changes
+# show up within seconds instead of an hour.
+@method_decorator(cache_page(30), name='dispatch')
 class ReferencePriceListView(generics.ListAPIView):
     """
     GET /api/v1/market/prices/
@@ -18,13 +20,22 @@ class ReferencePriceListView(generics.ListAPIView):
     pagination_class = None  # Always return all prices
 
 
-@method_decorator(cache_page(60 * 60), name='dispatch')
-class CategoryListView(generics.ListAPIView):
+class IsAdminOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return bool(request.user and request.user.is_authenticated and request.user.is_staff)
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
     """
-    GET /api/v1/market/categories/
-    Public — returns produce categories for filter dropdowns.
+    /api/v1/market/categories/        GET public · POST admin
+    /api/v1/market/categories/<id>/   PATCH/DELETE admin
     """
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [IsAdminOrReadOnly]
     pagination_class = None
+
+    def perform_create(self, serializer):
+        serializer.save(order=Category.objects.count() + 1)

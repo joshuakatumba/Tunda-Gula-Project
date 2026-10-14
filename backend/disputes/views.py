@@ -16,10 +16,13 @@ class DisputeViewSet(viewsets.ModelViewSet):
     Admins can view all and resolve them — maps to AdminDisputes.tsx.
     """
     serializer_class = DisputeSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == "admin":
+        if not user.is_authenticated:
+            return Dispute.objects.none()
+        if getattr(user, "role", None) == "admin":
             return Dispute.objects.all().select_related("raised_by", "resolved_by", "order")
         return Dispute.objects.filter(raised_by=user).select_related("order")
 
@@ -49,9 +52,24 @@ class DisputeViewSet(viewsets.ModelViewSet):
         dispute.resolved_at = timezone.now()
         dispute.save()
 
+        # Update payment escrow if refund or release specified
+        from payments.models import Payment
+        payment = Payment.objects.filter(order=dispute.order).first()
+        action_type = request.data.get("action", "").lower()
+        res_lower = resolution.lower()
+        if payment:
+            if "refund" in res_lower or action_type == "refund":
+                payment.status = "refunded"
+                payment.save()
+            elif "release" in res_lower or action_type == "release":
+                payment.status = "released"
+                payment.save()
+
         from notifications.sms import send_sms
         message = f"Dispute for {dispute.order.item_name} resolved: {resolution}"
-        send_sms(dispute.order.buyer.phone, message)
-        send_sms(dispute.order.seller.phone, message)
+        if dispute.order.buyer and dispute.order.buyer.phone:
+            send_sms(dispute.order.buyer.phone, message)
+        if dispute.order.seller and dispute.order.seller.phone:
+            send_sms(dispute.order.seller.phone, message)
         
         return Response(DisputeSerializer(dispute).data)

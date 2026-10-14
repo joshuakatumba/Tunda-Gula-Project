@@ -8,19 +8,22 @@ interface HeadProps {
   action?: React.ReactNode;
 }
 
-export const Head: React.FC<HeadProps> = ({ title, action }) => (
+export const Head: React.FC<HeadProps> = ({ title, lede, action }) => (
   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
-    <h1 style={{
-      fontFamily: "var(--font-inter)",
-      fontSize: "36px",
-      fontWeight: 700,
-      letterSpacing: "-0.396px",
-      lineHeight: 1.25,
-      color: "var(--color-obsidian)",
-      margin: 0,
-    }}>
-      {title}
-    </h1>
+    <div>
+      <h1 style={{
+        fontFamily: "var(--font-inter)",
+        fontSize: "var(--fs-display)",
+        fontWeight: 700,
+        letterSpacing: "-0.396px",
+        lineHeight: 1.25,
+        color: "var(--color-obsidian)",
+        margin: 0,
+      }}>
+        {title}
+      </h1>
+      {lede && <p style={{ marginTop: "8px", margin: 0, color: "var(--color-slate)", fontSize: "var(--fs-body)" }}>{lede}</p>}
+    </div>
     {action && <div>{action}</div>}
   </div>
 );

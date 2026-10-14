@@ -232,7 +232,6 @@ export default function Auth({ init, onClose, onDone, say }) {
           <div className="stack">
             <Pick on={false} ic={<Sprout size="1em" />} t="I am selling produce" d="Farmers, cooperatives, aggregators." onClick={() => { setRole("seller"); setStep("type"); }} />
             <Pick on={false} ic={<ShoppingBasket size="1em" />} t="I am buying produce" d="Households, restaurants, retailers, institutions." onClick={() => { setRole("buyer"); setStep("type"); }} />
-            <Pick on={false} ic={<Shield size="1em" />} t="I am TundaGula staff" d="Administrator access." onClick={() => { setRole("admin"); setStep("details"); }} />
           </div>
           <div className="row"><span className="hint">Already registered?</span><Button variant="text" onClick={() => { setMode("login"); setError(""); }}>Log in</Button></div>
         </>

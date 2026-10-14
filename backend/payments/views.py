@@ -77,8 +77,17 @@ def payment_webhook(request):
     POST /api/v1/payments/webhook/
     Callback from MTN MoMo / Airtel Money API confirming payment status.
     """
+    from django.conf import settings
+    webhook_secret = getattr(settings, "PAYMENT_WEBHOOK_SECRET", "")
+    auth_secret = request.headers.get("X-Webhook-Secret") or request.data.get("secret")
+    if webhook_secret and auth_secret != webhook_secret:
+        return Response({"error": "Unauthorized webhook signature"}, status=status.HTTP_403_FORBIDDEN)
+
     external_ref = request.data.get("external_ref")
     payment_status = request.data.get("status")  # "success" or "failed"
+
+    if not external_ref:
+        return Response({"error": "external_ref is required"}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         payment = Payment.objects.get(external_ref=external_ref)
@@ -90,6 +99,10 @@ def payment_webhook(request):
     if payment_status == "success":
         payment.status = "held"
         payment.confirmed_at = timezone.now()
+        if payment.order and payment.order.status == "placed":
+            payment.order.status = "accepted"
+            payment.order.accepted_at = timezone.now()
+            payment.order.save(update_fields=["status", "accepted_at"])
     else:
         payment.status = "failed"
 

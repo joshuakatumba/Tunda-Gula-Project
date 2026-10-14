@@ -37,8 +37,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         password = data.get("password")
         verification_token = data.get("verification_token")
 
-        if role not in [User.Role.BUYER, User.Role.SELLER, User.Role.ADMIN]:
-            raise serializers.ValidationError({"role": "Public registration only allows buyer, seller, or staff accounts."})
+        if role not in [User.Role.BUYER, User.Role.SELLER]:
+            raise serializers.ValidationError({"role": "Public registration only allows buyer or seller accounts."})
 
         # --- SELLER (Farmer): Retains phone + OTP verification ---
         if role == User.Role.SELLER:
@@ -67,13 +67,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             if not data.get("district"):
                 raise serializers.ValidationError({"district": "District is required for sellers."})
 
-        # --- BUYER & ADMIN: OTP is commented out, normal email & password flow enforced ---
-        elif role in [User.Role.BUYER, User.Role.ADMIN]:
-            # NOTE: OTP verification check is commented out for Buyer and Admin accounts.
-            # Normal email & password authentication is used instead.
-            # if not is_token_valid and not has_verified_record:
-            #     raise serializers.ValidationError({"phone": "Phone number must be verified with OTP before registering."})
-
+        # --- BUYER: Email & password authentication ---
+        elif role == User.Role.BUYER:
             if not email:
                 raise serializers.ValidationError({"email": "Email address is required."})
 
@@ -83,11 +78,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             if not password or len(password) < 6:
                 raise serializers.ValidationError({"password": "Password must be at least 6 characters long."})
 
-            if role == User.Role.BUYER and not data.get("name"):
+            if not data.get("name"):
                 raise serializers.ValidationError({"name": "Name is required for buyers."})
-
-            if role == User.Role.ADMIN and not data.get("name"):
-                data["name"] = email.split("@")[0].replace(".", " ").capitalize()
 
         return data
 
@@ -105,11 +97,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             validated_data["nin_match"] = True
             if validated_data.get("gps_lat") and validated_data.get("gps_lng"):
                 validated_data["gps_pinned"] = True
-        elif role in [User.Role.BUYER, User.Role.ADMIN]:
+        elif role == User.Role.BUYER:
             validated_data["otp_verified"] = True
-            if role == User.Role.ADMIN:
-                validated_data["is_staff"] = True
-                validated_data["is_superuser"] = True
+
+        # Ensure no administrative escalation can ever occur from registration
+        validated_data.pop("is_staff", None)
+        validated_data.pop("is_superuser", None)
 
         user = User(**validated_data)
         if password:
@@ -152,6 +145,7 @@ class PendingVerificationSerializer(serializers.ModelSerializer):
         fields = [
             "id", "name", "seller_type", "nin", "phone", "district",
             "nin_match", "otp_verified", "gps_pinned",
+            "gps_lat", "gps_lng", "is_verified",
             "verification_submitted_at",
         ]
         read_only_fields = fields

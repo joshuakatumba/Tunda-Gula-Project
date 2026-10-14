@@ -12,10 +12,20 @@ from .serializers import (
 
 
 class IsSellerOrReadOnly(permissions.BasePermission):
-    """Only verified sellers can create/edit listings."""
+    """Only verified sellers can create/edit listings. Admins may delete (moderation)."""
+
+    @staticmethod
+    def _is_admin_delete(request):
+        return (
+            request.method == "DELETE"
+            and request.user.is_authenticated
+            and getattr(request.user, "is_staff_member", False)
+        )
 
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
+            return True
+        if self._is_admin_delete(request):
             return True
         return (
             request.user.is_authenticated
@@ -25,6 +35,8 @@ class IsSellerOrReadOnly(permissions.BasePermission):
 
     def has_object_permission(self, request, view, obj):
         if request.method in permissions.SAFE_METHODS:
+            return True
+        if self._is_admin_delete(request):
             return True
         return obj.seller == request.user
 
@@ -43,9 +55,13 @@ class ListingViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [IsSellerOrReadOnly]
 
-    @method_decorator(cache_page(60 * 5))
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        # Respond with the full representation so the UI gets id + absolute thumbnail URL
+        full = ListingSerializer(serializer.instance, context=self.get_serializer_context())
+        return Response(full.data, status=201)
 
     def get_queryset(self):
         qs = Listing.objects.filter(is_active=True).select_related("seller")
@@ -79,7 +95,8 @@ class ListingViewSet(viewsets.ModelViewSet):
         return ListingSerializer
 
     def perform_create(self, serializer):
-        serializer.save(seller=self.request.user, district=self.request.user.district)
+        # District chosen in ListingForm is kept; serializer falls back to the seller's profile district.
+        serializer.save(seller=self.request.user)
         self._bust_listing_cache()
 
     def perform_update(self, serializer):
@@ -138,7 +155,7 @@ def seller_dashboard(request):
     orders_this_month = Order.objects.filter(seller=seller, placed_at__gte=month_start)
     pending_orders = Order.objects.filter(
         seller=seller,
-        status__in=[Order.Status.PLACED, Order.Status.ACCEPTED]
+        status__in=[Order.Status.PLACED, Order.Status.ACCEPTED, "out_for_delivery"]
     )
 
     from django.db.models import F
@@ -163,7 +180,7 @@ def seller_dashboard(request):
         "pending_orders": pending_orders.count(),
         "gross_revenue": gross_amount,
         "avg_rating": round(rating_stats["avg"] or 0, 1),
-        "rating_count": rating_stats["count"],
+        "rating_count": rating_stats["count"] or 0,
         "is_verified": seller.is_verified,
         "district": seller.district,
         "seller_type": seller.seller_type,

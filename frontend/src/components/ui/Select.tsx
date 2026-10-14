@@ -109,7 +109,6 @@ export const Select: React.FC<SelectProps> = ({
             borderRadius: "var(--radius-cards)",
             boxShadow: "var(--shadow-xl)",
             padding: "12px",
-            animation: "slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
             maxHeight: "260px",
             overflowY: "auto",
             scrollbarWidth: "none",

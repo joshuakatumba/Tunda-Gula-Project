@@ -8,6 +8,7 @@
 import React, { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 // Fix Leaflet default icon paths broken by bundlers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -41,7 +42,7 @@ export default function FarmMap({ pins, height = 400 }: FarmMapProps) {
     <MapContainer
       center={centre}
       zoom={7}
-      style={{ height, width: "100%", borderRadius: 8, border: "1px solid var(--line)" }}
+      style={{ height, width: "100%", borderRadius: 8, border: "1px solid var(--line)", position: "relative", zIndex: 0 }}
       scrollWheelZoom={false}
     >
       <TileLayer

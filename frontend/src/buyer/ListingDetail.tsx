@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Play, Pause, MapPin, Mic, Loader2, ArrowLeft } from "lucide-react";
+import { Play, Pause, MapPin, Mic, Loader2, ArrowLeft, ShoppingBag } from "lucide-react";
 import { EMOJI, TINT } from "../data/categories";
 import { ugx, typeLabel } from "../utils/helpers";
+import { resolveMediaUrl } from "../utils/media";
 import { Badge } from "../components/Badge";
 import { Field } from "../components/Field";
 import { Button } from "../components/ui/Button";
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
 
-export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen }) {
+export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen, cart = [], cartTotal = 0, onCheckout }: any) {
   const [l, setL] = useState(initial);
   const [loading, setLoading] = useState(false);
   const [qty, setQty] = useState(10);
@@ -39,6 +40,7 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
           top: false,
           voice: data.voice_duration || 0,
           voice_file: data.voice_file || null,
+          thumbnail: data.thumbnail || null,
           photos: data.photo_count || 0,
           photos_data: data.photos || [],
           ref: Math.round(data.price * 1.06),
@@ -61,10 +63,12 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
   };
 
   const hasRealPhotos = l.photos_data && l.photos_data.length > 0;
+  const inCartItem = cart?.find((x: any) => x.id === l.id);
+  const inCartQty = inCartItem?.qty || 0;
 
   return (
     <div>
-      <div style={{ marginBottom: "20px" }}>
+      <div className="desktop-only row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         <button
           onClick={onBack}
           style={{
@@ -78,11 +82,22 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
             fontWeight: 600,
             cursor: "pointer",
             padding: 0,
-            textDecoration: "underline",
           }}
         >
-          <ArrowLeft size={16} /> Back to marketplace
+          <ArrowLeft size={16} /> Back
         </button>
+
+        {cart && cart.length > 0 && onCheckout && (
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onCheckout}
+            style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+          >
+            <ShoppingBag size={16} />
+            <span>Basket ({cart.length})</span>
+          </Button>
+        )}
       </div>
 
       {loading && (
@@ -91,12 +106,22 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
         </div>
       )}
 
-      <div className="grid" style={{ gridTemplateColumns: "1.3fr .7fr", gap: "24px", alignItems: "start" }}>
+      <div className="listing-layout">
         <div className="stack" style={{ gap: "20px" }}>
           <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-            <div style={{ height: 320, background: "var(--color-fog)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 96 }}>
-              {hasRealPhotos ? (
-                <img src={l.photos_data[shot]?.image} alt={l.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <div style={{ height: 320, background: "var(--color-fog)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 96, position: "relative" }}>
+              <button
+                className="listing-mobile-back"
+                onClick={onBack}
+                aria-label="Back"
+                title="Back"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              {l.thumbnail ? (
+                <img src={resolveMediaUrl(l.thumbnail) || undefined} alt={l.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : hasRealPhotos ? (
+                <img src={resolveMediaUrl(l.photos_data[shot]?.image) || undefined} alt={l.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : (
                 <span>{EMOJI[l.cat]}</span>
               )}
@@ -118,7 +143,7 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
                         cursor: "pointer",
                       }}
                     >
-                      <img src={p.image} alt={`Photo ${i + 1}`} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img src={resolveMediaUrl(p.image) || undefined} alt={`Photo ${i + 1}`} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     </button>
                   ))
                 ) : (
@@ -241,22 +266,47 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
             <div className="rule" style={{ margin: "16px 0" }} />
             <Field label={`Quantity (${l.unit})`}>
               <div className="row" style={{ gap: 8, flexWrap: "nowrap" }}>
-                <button className="btn-sm" onClick={() => setQty(q => Math.max(1, q - 5))}>-</button>
+                <button
+                  type="button"
+                  className="btn-sm"
+                  style={{ width: "36px", height: "36px", fontSize: "16px", fontWeight: "bold" }}
+                  onClick={() => setQty(q => Math.max(1, q - 1))}
+                  disabled={qty <= 1}
+                >
+                  -
+                </button>
                 <input
                   type="number"
                   value={qty}
                   min="1"
                   max={l.qty}
-                  style={{ textAlign: "center", fontWeight: 600 }}
-                  onChange={e => setQty(Math.max(1, Math.min(l.qty, Number(e.target.value) || 1)))}
+                  style={{ textAlign: "center", fontWeight: 700, fontSize: "16px", flex: 1 }}
+                  onChange={e => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val)) {
+                      setQty(Math.max(1, Math.min(l.qty, val)));
+                    } else {
+                      setQty(1);
+                    }
+                  }}
                 />
-                <button className="btn-sm" onClick={() => setQty(q => Math.min(l.qty, q + 5))}>+</button>
+                <button
+                  type="button"
+                  className="btn-sm"
+                  style={{ width: "36px", height: "36px", fontSize: "16px", fontWeight: "bold" }}
+                  onClick={() => setQty(q => Math.min(l.qty, q + 1))}
+                  disabled={qty >= l.qty}
+                >
+                  +
+                </button>
               </div>
             </Field>
+
             <div className="between" style={{ marginTop: "16px", alignItems: "center" }}>
               <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-slate)" }}>Total</span>
               <strong style={{ fontSize: "20px", color: "var(--color-obsidian)" }}>{ugx(qty * l.price)}</strong>
             </div>
+
             <div style={{ marginTop: "16px" }}>
               <Button
                 variant="primary"
@@ -282,6 +332,16 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="mobile-buy-bar">
+        <div>
+          <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)" }}>{ugx(qty * l.price)}</div>
+          <div style={{ fontSize: "11px", color: "var(--color-slate)" }}>per {l.unit}</div>
+        </div>
+        <Button variant="primary" onClick={() => onAdd(l, qty)} disabled={l.qty === 0}>
+          {l.qty === 0 ? "Sold out" : "Add to basket"}
+        </Button>
       </div>
     </div>
   );
