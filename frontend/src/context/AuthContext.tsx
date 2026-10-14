@@ -31,6 +31,8 @@ export interface UserSession {
 
 interface AuthContextType {
   user: UserSession | null;
+  /** Backwards-compatibility alias for user */
+  session?: UserSession | null;
   loading: boolean;
   /** Log in with email (or phone) and password */
   login: (identifier: string, password: string) => Promise<UserSession>;
@@ -181,7 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, requestOtp, verifyOtp, register, setSession, logout, logoutAll }}>
+    <AuthContext.Provider value={{ user, session: user, loading, login, requestOtp, verifyOtp, register, setSession, logout, logoutAll }}>
       {children}
     </AuthContext.Provider>
   );

@@ -43,6 +43,11 @@ class OrderViewSet(viewsets.ModelViewSet):
             seller=listing.seller,
             order_type="order",
         )
+        if listing:
+            listing.quantity = max(0, listing.quantity - order.quantity)
+            listing.save(update_fields=["quantity"])
+            from django.core.cache import cache
+            cache.clear()
         
         from notifications.sms import send_sms
         send_sms(order.seller.phone, f"New Order: {order.quantity} {listing.unit} of {listing.name} ordered by {order.buyer.name}.")
@@ -51,8 +56,10 @@ class OrderViewSet(viewsets.ModelViewSet):
     def accept(self, request, pk=None):
         """Seller accepts an order."""
         order = self.get_object()
-        if order.seller != request.user:
+        if order.seller != request.user and not request.user.is_staff:
             return Response({"error": "Not your order"}, status=status.HTTP_403_FORBIDDEN)
+        if order.status != "placed":
+            return Response({"error": f"Cannot accept order in status '{order.status}'"}, status=status.HTTP_400_BAD_REQUEST)
         from django.utils import timezone
         order.status = "accepted"
         order.accepted_at = timezone.now()
@@ -64,9 +71,29 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Response(OrderSerializer(order).data)
 
     @action(detail=True, methods=["post"])
-    def deliver(self, request, pk=None):
-        """Mark order as delivered."""
+    def dispatch(self, request, pk=None):
+        """Seller marks order as out for delivery."""
         order = self.get_object()
+        if order.seller != request.user and not request.user.is_staff:
+            return Response({"error": "Not your order"}, status=status.HTTP_403_FORBIDDEN)
+        if order.status not in ["placed", "accepted"]:
+            return Response({"error": f"Cannot dispatch order in status '{order.status}'"}, status=status.HTTP_400_BAD_REQUEST)
+        order.status = "out_for_delivery"
+        if "delivery_mode" in request.data:
+            order.delivery_mode = request.data["delivery_mode"]
+        order.save()
+        from notifications.sms import send_sms
+        send_sms(order.buyer.phone, f"Your order for {order.item_name} is on the way via {order.delivery_mode}!")
+        return Response(OrderSerializer(order).data)
+
+    @action(detail=True, methods=["post"])
+    def deliver(self, request, pk=None):
+        """Mark order as delivered (either buyer confirms or seller marks completed)."""
+        order = self.get_object()
+        if order.buyer != request.user and order.seller != request.user and not request.user.is_staff:
+            return Response({"error": "Only the buyer or seller can mark this order as delivered."}, status=status.HTTP_403_FORBIDDEN)
+        if order.status not in ["placed", "accepted", "out_for_delivery"]:
+            return Response({"error": f"Order in status '{order.status}' cannot be marked as delivered."}, status=status.HTTP_400_BAD_REQUEST)
         from django.utils import timezone
         order.status = "delivered"
         order.delivered_at = timezone.now()
@@ -127,6 +154,55 @@ class OrderViewSet(viewsets.ModelViewSet):
             comment=request.data.get("comment", ""),
         )
         return Response(RatingSerializer(rating).data, status=status.HTTP_201_CREATED)
+
+
+class RatingViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    /api/v1/orders/ratings/
+    List customer ratings and summaries dynamically from the database.
+    """
+    serializer_class = RatingSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        from accounts.models import User
+        seller_id = self.request.query_params.get("seller")
+        if seller_id:
+            return Rating.objects.filter(seller_id=seller_id).select_related("buyer", "seller", "order")
+        user = self.request.user
+        if not user.is_authenticated:
+            return Rating.objects.none()
+        if user.role == "seller":
+            return Rating.objects.filter(seller=user).select_related("buyer", "seller", "order")
+        elif user.role == "buyer":
+            return Rating.objects.filter(buyer=user).select_related("buyer", "seller", "order")
+        return Rating.objects.all().select_related("buyer", "seller", "order")
+
+    @action(detail=False, methods=["get"])
+    def summary(self, request):
+        from accounts.models import User
+        from django.db.models import Avg, Count
+        seller_id = request.query_params.get("seller")
+        seller = None
+        if seller_id:
+            seller = User.objects.filter(id=seller_id).first()
+        elif request.user.is_authenticated and request.user.role == "seller":
+            seller = request.user
+
+        qs = Rating.objects.all()
+        if seller:
+            qs = qs.filter(seller=seller)
+
+        agg = qs.aggregate(avg=Avg("stars"), count=Count("id"))
+        repeat_buyers = qs.values("buyer").annotate(c=Count("id")).filter(c__gt=1).count() if seller else 0
+        total_unique_buyers = qs.values("buyer").distinct().count() if seller else 0
+
+        return Response({
+            "avg_rating": round(agg["avg"] or 0, 1),
+            "total_reviews": agg["count"] or 0,
+            "repeat_buyers": repeat_buyers,
+            "total_buyers": total_unique_buyers,
+        })
 
 
 @api_view(["POST"])

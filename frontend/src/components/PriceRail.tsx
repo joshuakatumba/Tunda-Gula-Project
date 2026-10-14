@@ -7,19 +7,32 @@ export const PriceRail = ({ t }) => {
   const [prices, setPrices] = useState(REF_PRICES);
 
   useEffect(() => {
-    api.get(ENDPOINTS.prices)
-      .then((data) => {
-        const items = Array.isArray(data) ? data : data.results || [];
-        if (items.length > 0) {
-          setPrices(items.map((p: any) => ({
-            name: p.name,
-            unit: p.unit,
-            price: p.price,
-            move: p.week_change ?? 0,
-          })));
-        }
-      })
-      .catch(() => { /* keep hardcoded fallback */ });
+    let alive = true;
+    const load = () =>
+      api.get(ENDPOINTS.prices)
+        .then((data) => {
+          if (!alive) return;
+          const items = Array.isArray(data) ? data : data.results || [];
+          if (items.length > 0) {
+            setPrices(items.map((p: any) => ({
+              name: p.name,
+              unit: p.unit,
+              price: p.price,
+              move: p.week_change ?? 0,
+            })));
+          }
+        })
+        .catch(() => { /* keep last known prices */ });
+
+    load();
+    const timer = setInterval(load, 30000);
+    const onVisible = () => { if (document.visibilityState === "visible") load(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   // Duplicate for smooth infinite marquee scrolling

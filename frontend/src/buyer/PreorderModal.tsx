@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Smartphone } from "lucide-react";
 import { ugx, dshort } from "../utils/helpers";
 import { Modal } from "../components/Modal";
 import { Field } from "../components/Field";
@@ -21,7 +22,20 @@ export default function PreorderModal({ plan, onClose, onPay }) {
   };
 
   return (
-    <Modal title="Reserve harvest" onClose={onClose}>
+    <Modal 
+      title="Reserve harvest" 
+      onClose={onClose}
+      footer={
+        <Button
+          variant="primary"
+          block
+          disabled={busy}
+          onClick={handlePay}
+        >
+          {busy ? "Processing..." : `Pay deposit · ${ugx(deposit)}`}
+        </Button>
+      }
+    >
       <div>
         <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)" }}>{plan.name}</h3>
         <div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "4px" }}>
@@ -40,23 +54,30 @@ export default function PreorderModal({ plan, onClose, onPay }) {
       </Field>
 
       <Field label="Payment method">
-        <div className="row" style={{ gap: "8px" }}>
+        <div className="grid g2" style={{ gap: "12px" }}>
           {["MTN", "Airtel"].map(p => (
             <button
               key={p}
               type="button"
-              className="btn-sm"
               onClick={() => setProvider(p)}
               style={{
-                flex: 1,
-                padding: "10px 16px",
-                borderColor: provider === p ? "var(--color-forest-ink)" : "var(--color-pebble)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                padding: "20px 16px",
+                borderRadius: "var(--radius-cards)",
+                border: "2px solid",
+                borderColor: provider === p ? "var(--color-forest-ink)" : "var(--color-fog)",
                 background: provider === p ? "var(--color-linen-mist)" : "var(--color-paper)",
                 color: "var(--color-forest-ink)",
                 fontWeight: provider === p ? 700 : 500,
+                transition: "all 0.2s ease"
               }}
             >
-              {p} Mobile Money
+              <Smartphone size={24} color={provider === p ? "var(--color-forest-ink)" : "var(--color-pebble)"} />
+              <span>{p} Mobile Money</span>
             </button>
           ))}
         </div>
@@ -72,15 +93,6 @@ export default function PreorderModal({ plan, onClose, onPay }) {
           <span style={{ fontFamily: "var(--font-monospace)" }}>{ugx(deposit)}</span>
         </div>
       </div>
-
-      <Button
-        variant="primary"
-        style={{ width: "100%" }}
-        disabled={busy}
-        onClick={handlePay}
-      >
-        {busy ? "Processing..." : `Pay deposit · ${ugx(deposit)}`}
-      </Button>
     </Modal>
   );
 }

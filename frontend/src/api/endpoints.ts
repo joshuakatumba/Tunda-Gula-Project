@@ -29,9 +29,12 @@ export const ENDPOINTS = {
   orders:         "/orders/",
   order:          (id: number | string) => `/orders/${id}/`,
   orderAccept:    (id: number | string) => `/orders/${id}/accept/`,
+  orderDispatch:  (id: number | string) => `/orders/${id}/dispatch/`,
   orderDeliver:   (id: number | string) => `/orders/${id}/deliver/`,
   orderRate:      (id: number | string) => `/orders/${id}/rate/`,
   preorder:       "/orders/preorder/",
+  ratings:        "/orders/ratings/",
+  ratingsSummary: "/orders/ratings/summary/",
 
   // ── Payments ─────────────────────────────────────────────────────
   initiate:       "/payments/initiate/",
@@ -48,7 +51,17 @@ export const ENDPOINTS = {
   categories:     "/market/categories/",
 
   // ── Admin ────────────────────────────────────────────────────────
+  adminStats:     "/accounts/admin/stats/",
   pending:        "/accounts/pending/",
   approve:        (id: number | string) => `/accounts/${id}/approve/`,
   reject:         (id: number | string) => `/accounts/${id}/reject/`,
+  toggleActive:   (id: number | string) => `/accounts/${id}/toggle-active/`,
+
+  // ── Admin reports ────────────────────────────────────────────────
+  reportTransactions:    "/payments/reports/transactions/",
+  reportTransactionsCsv: "/payments/reports/transactions.csv",
+  reportUsers:           "/payments/reports/users/",
+  reportUsersCsv:        "/payments/reports/users.csv",
+  reportGmvCsv:          "/payments/reports/gmv.csv",
+  category:              (id: number | string) => `/market/categories/${id}/`,
 };

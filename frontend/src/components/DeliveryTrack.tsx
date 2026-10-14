@@ -10,26 +10,34 @@ export const DeliveryTrack: React.FC<DeliveryTrackProps> = ({ status }) => {
   const currentIdx = Math.max(0, statusKeys.indexOf(status));
 
   return (
-    <div style={{ width: "100%", padding: "8px 0" }}>
+    <div style={{ width: "100%", padding: "16px 0", position: "relative" }}>
+      {/* Background line */}
       <div style={{
-        width: "100%",
-        height: "6px",
+        position: "absolute",
+        top: "23px",
+        left: "15%",
+        right: "15%",
+        height: "4px",
         backgroundColor: "var(--color-fog)",
-        borderRadius: "var(--radius-full)",
-        overflow: "hidden",
-        marginBottom: "10px",
-      }}>
-        <div style={{
-          width: `${((currentIdx + 1) / steps.length) * 100}%`,
-          height: "100%",
-          backgroundColor: "var(--color-lime-voltage)",
-          transition: "width 0.3s ease",
-        }} />
-      </div>
+        zIndex: 1,
+      }} />
+      {/* Active line */}
+      <div style={{
+        position: "absolute",
+        top: "23px",
+        left: "15%",
+        width: `${(currentIdx / (steps.length - 1)) * 70}%`,
+        height: "4px",
+        backgroundColor: "var(--color-lime-voltage)",
+        zIndex: 2,
+        transition: "width 0.3s ease",
+      }} />
+      
       <div style={{
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "center",
+        position: "relative",
+        zIndex: 3,
       }}>
         {steps.map((label, idx) => {
           const isDone = idx <= currentIdx;
@@ -38,24 +46,30 @@ export const DeliveryTrack: React.FC<DeliveryTrackProps> = ({ status }) => {
             <div
               key={label}
               style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                flex: 1,
+                gap: "8px",
+              }}
+            >
+              <div style={{
+                width: "18px",
+                height: "18px",
+                borderRadius: "50%",
+                backgroundColor: isDone ? "var(--color-lime-voltage)" : "var(--color-fog)",
+                border: "4px solid var(--color-paper)",
+                boxShadow: isDone ? "0 0 0 1px var(--color-lime-voltage)" : "0 0 0 1px var(--color-fog)",
+              }} />
+              <div style={{
                 fontFamily: "var(--font-inter)",
                 fontSize: "12px",
                 fontWeight: isCurrent ? 600 : 500,
-                color: isDone ? "var(--color-forest-ink)" : "var(--color-pebble)",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              <span
-                style={{
-                  width: "8px",
-                  height: "8px",
-                  borderRadius: "50%",
-                  backgroundColor: isDone ? "var(--color-forest-ink)" : "var(--color-pebble)",
-                }}
-              />
-              {label}
+                color: isCurrent ? "var(--color-obsidian)" : (isDone ? "var(--color-forest-ink)" : "var(--color-pebble)"),
+                textAlign: "center",
+              }}>
+                {label}
+              </div>
             </div>
           );
         })}

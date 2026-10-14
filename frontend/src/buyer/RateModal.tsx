@@ -12,14 +12,17 @@ export default function RateModal({ order, onClose, onSubmit }) {
   const handleSubmit = async () => {
     setBusy(true);
     try {
-      await onSubmit(Math.round((quality + service) / 2));
+      await onSubmit({
+        stars: Math.round((quality + service) / 2),
+        comment: note.trim(),
+      });
     } finally {
       setBusy(false);
     }
   };
 
   const Stars = ({ value, set }: { value: number; set: (n: number) => void }) => (
-    <div className="row" style={{ gap: "8px" }}>
+    <div className="row" style={{ gap: "4px" }}>
       {[1, 2, 3, 4, 5].map(n => (
         <button
           key={n}
@@ -27,13 +30,14 @@ export default function RateModal({ order, onClose, onSubmit }) {
           onClick={() => set(n)}
           aria-label={`${n} stars`}
           style={{
-            fontSize: "26px",
+            fontSize: "36px",
             color: n <= value ? "var(--color-forest-ink)" : "var(--color-pebble)",
             cursor: "pointer",
             background: "none",
             border: "none",
-            padding: "2px",
+            padding: "8px",
             lineHeight: 1,
+            touchAction: "manipulation",
           }}
         >
           ★
@@ -43,7 +47,20 @@ export default function RateModal({ order, onClose, onSubmit }) {
   );
 
   return (
-    <Modal title="Rate seller" onClose={onClose}>
+    <Modal 
+      title="Rate seller" 
+      onClose={onClose}
+      footer={
+        <Button
+          variant="primary"
+          block
+          disabled={!quality || !service || busy}
+          onClick={handleSubmit}
+        >
+          {busy ? "Submitting..." : "Submit rating"}
+        </Button>
+      }
+    >
       <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-obsidian)" }}>
         {order.item} · {order.seller}
       </div>
@@ -61,14 +78,6 @@ export default function RateModal({ order, onClose, onSubmit }) {
           placeholder="Additional notes..."
         />
       </Field>
-      <Button
-        variant="primary"
-        style={{ width: "100%" }}
-        disabled={!quality || !service || busy}
-        onClick={handleSubmit}
-      >
-        {busy ? "Submitting..." : "Submit rating"}
-      </Button>
     </Modal>
   );
 }

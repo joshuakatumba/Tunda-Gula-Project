@@ -5,12 +5,14 @@ export const Modal = ({
   title,
   onClose,
   children,
-  wide
+  wide,
+  footer
 }: {
   title: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
   wide?: boolean;
+  footer?: React.ReactNode;
 }) => {
   const onCloseRef = React.useRef(onClose);
   React.useEffect(() => {
@@ -46,11 +48,12 @@ export const Modal = ({
       }}
       onClick={e => e.stopPropagation()}
     >
+      <div className="sheet-handle"></div>
       <div
         style={{
           background: "var(--color-paper)",
           color: "var(--color-obsidian)",
-          padding: "20px 24px",
+          padding: "16px 24px",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -102,6 +105,17 @@ export const Modal = ({
       >
         {children}
       </div>
+      {footer && (
+        <div style={{
+          padding: "16px 24px",
+          borderTop: "1px solid var(--color-fog)",
+          background: "var(--color-paper)",
+          position: "sticky",
+          bottom: 0,
+        }}>
+          {footer}
+        </div>
+      )}
     </div>
   </div>
   );

@@ -1,5 +1,6 @@
 import React from "react";
 import { ugx, dshort, daysTo } from "../utils/helpers";
+import { Head } from "../components/Head";
 import { Button } from "../components/ui/Button";
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
@@ -91,24 +92,14 @@ export default function SellerPlans({ myPlans, setPlans, pushSms, say, onCreateP
 
                 {p.reserved > 0 && (
                   <div style={{ marginTop: "16px", borderTop: "1px solid var(--color-fog)", paddingTop: "12px" }}>
-                    <table className="tbl">
-                      <thead>
-                        <tr>
-                          <th>Buyer</th>
-                          <th>Reserved</th>
-                          <th>Deposit paid</th>
-                          <th>Contact</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>Nakato Catering</td>
-                          <td style={{ fontFamily: "var(--font-monospace)" }}>{p.reserved} {p.unit}</td>
-                          <td style={{ fontFamily: "var(--font-monospace)" }}>{ugx(p.reserved * p.price * p.deposit / 100)}</td>
-                          <td style={{ fontFamily: "var(--font-monospace)" }}>0772••882</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
+                      <span style={{ color: "var(--color-slate)" }}>Total Reserved Volume:</span>
+                      <strong style={{ fontFamily: "var(--font-monospace)", color: "var(--color-obsidian)" }}>{p.reserved} {p.unit}</strong>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px", marginTop: "6px" }}>
+                      <span style={{ color: "var(--color-slate)" }}>Total Deposits In Escrow:</span>
+                      <strong style={{ fontFamily: "var(--font-monospace)", color: "var(--color-forest-ink)" }}>{ugx(p.reserved * p.price * p.deposit / 100)}</strong>
+                    </div>
                   </div>
                 )}
               </div>

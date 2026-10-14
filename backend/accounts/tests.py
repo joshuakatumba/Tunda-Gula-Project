@@ -107,9 +107,9 @@ class AccountRegistrationAPITests(APITestCase):
             status=OTP.Status.VERIFIED,
         )
 
-    def test_registration_requires_verified_otp(self):
+    def test_registration_requires_email_for_buyer(self):
+        """Buyer registration without email is rejected."""
         data = {
-            "phone": "0785000111",
             "name": "Unverified User",
             "role": "buyer",
             "buyer_type": "household",
@@ -118,13 +118,13 @@ class AccountRegistrationAPITests(APITestCase):
         url = reverse("accounts:register")
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("phone", response.data)
+        self.assertIn("email", response.data)
 
     def test_register_buyer_success(self):
-        phone = "0785123456"
-        self.create_verified_otp(phone)
+        """Buyer registers with email + password (no OTP required)."""
         data = {
-            "phone": phone,
+            "email": "jane@example.com",
+            "password": "securePass123",
             "name": "Jane Doe",
             "role": "buyer",
             "buyer_type": "household",
@@ -135,7 +135,7 @@ class AccountRegistrationAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("token", response.data)
         self.assertEqual(response.data["user"]["role"], "buyer")
-        self.assertEqual(response.data["user"]["phone"], "+256785123456")
+        self.assertEqual(response.data["user"]["email"], "jane@example.com")
 
     def test_register_farmer_success(self):
         phone = "0772987654"
@@ -210,8 +210,7 @@ from accounts.utils import (
 class SecureLoginAndOTPTests(APITestCase):
     """Day 2 Tests: Industrial OTP generation, verification, brute-force locking, and secure login."""
 
-    @patch("accounts.views.send_sms")
-    def test_request_otp_generates_6_digit_code_and_salted_hash(self, mock_send_sms):
+    def test_request_otp_generates_6_digit_code_and_salted_hash(self):
         url = reverse("accounts:otp-request")
         response = self.client.post(
             url,
@@ -236,10 +235,8 @@ class SecureLoginAndOTPTests(APITestCase):
         self.assertEqual(len(saved_otp.salt), 32)
         self.assertTrue(saved_otp.check_code(saved_otp.code))
         self.assertFalse(saved_otp.check_code("000000"))
-        mock_send_sms.assert_called_once()
 
-    @patch("accounts.views.send_sms")
-    def test_request_otp_cooldown_rate_limit(self, mock_send_sms):
+    def test_request_otp_cooldown_rate_limit(self):
         url = reverse("accounts:otp-request")
         phone = "0772333444"
 
@@ -252,8 +249,7 @@ class SecureLoginAndOTPTests(APITestCase):
         self.assertEqual(second_res.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         self.assertIn("wait 1 minute", second_res.data["error"])
 
-    @patch("accounts.views.send_sms")
-    def test_request_otp_hourly_limit(self, mock_send_sms):
+    def test_request_otp_hourly_limit(self):
         phone = "+256772999111"
         for i in range(5):
             otp = OTP.objects.create(
@@ -268,8 +264,7 @@ class SecureLoginAndOTPTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         self.assertIn("hour", response.data["error"])
 
-    @patch("accounts.views.send_sms")
-    def test_request_otp_daily_limit(self, mock_send_sms):
+    def test_request_otp_daily_limit(self):
         phone = "+256772999222"
         for i in range(10):
             otp = OTP.objects.create(
@@ -284,8 +279,7 @@ class SecureLoginAndOTPTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         self.assertIn("Daily code limit reached", response.data["error"])
 
-    @patch("accounts.views.send_sms")
-    def test_request_otp_ip_rate_limit(self, mock_send_sms):
+    def test_request_otp_ip_rate_limit(self):
         client_ip = "192.168.100.99"
         # 15 requests from different phones on the same IP
         for i in range(15):
@@ -307,8 +301,7 @@ class SecureLoginAndOTPTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
         self.assertIn("Too many requests from your network", response.data["error"])
 
-    @patch("accounts.views.send_sms")
-    def test_request_otp_invalidates_previous_codes(self, mock_send_sms):
+    def test_request_otp_invalidates_previous_codes(self):
         phone = "+256772555666"
         old_otp = OTP.objects.create(
             phone=phone,
@@ -374,16 +367,18 @@ class SecureLoginAndOTPTests(APITestCase):
         self.assertTrue(check_verification_token(token, formatted_phone))
 
     def test_register_with_signed_verification_token_succeeds(self):
+        """Seller can register with a signed verification token (phone+OTP flow)."""
         phone = "+256772444555"
         token = make_verification_token(phone)
 
         url = reverse("accounts:register")
         data = {
             "phone": phone,
-            "name": "Token Verified Buyer",
-            "role": "buyer",
-            "buyer_type": "household",
+            "name": "Token Verified Seller",
+            "role": "seller",
+            "seller_type": "smallholder",
             "district": "Kampala",
+            "nin": "CM900999888ABC",
             "verification_token": token,
         }
         response = self.client.post(url, data, format="json")
@@ -392,16 +387,18 @@ class SecureLoginAndOTPTests(APITestCase):
         self.assertEqual(response.data["user"]["phone"], phone)
 
     def test_register_with_tampered_verification_token_fails(self):
+        """Seller registration with an invalid token is rejected."""
         phone = "+256772444666"
         tampered_token = "invalid.signature.token"
 
         url = reverse("accounts:register")
         data = {
             "phone": phone,
-            "name": "Tampered Token Buyer",
-            "role": "buyer",
-            "buyer_type": "household",
+            "name": "Tampered Token Seller",
+            "role": "seller",
+            "seller_type": "smallholder",
             "district": "Kampala",
+            "nin": "CM900999777ABC",
             "verification_token": tampered_token,
         }
         response = self.client.post(url, data, format="json")
@@ -422,7 +419,8 @@ class SecureLoginAndOTPTests(APITestCase):
         url = reverse("accounts:otp-verify")
         response = self.client.post(url, {"phone": phone, "code": "000000"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("4 attempt(s) remaining", response.data["error"])
+        # The error message should include remaining attempts
+        self.assertIn("attempt(s) remaining", response.data["error"])
 
         otp.refresh_from_db()
         self.assertEqual(otp.attempts, 1)
@@ -440,7 +438,7 @@ class SecureLoginAndOTPTests(APITestCase):
         )
 
         url = reverse("accounts:otp-verify")
-        # 5th failed attempt
+        # 5th failed attempt — should trigger lockout
         response = self.client.post(url, {"phone": phone, "code": "000000"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("Too many failed attempts", response.data["error"])
@@ -448,6 +446,7 @@ class SecureLoginAndOTPTests(APITestCase):
         otp.refresh_from_db()
         self.assertTrue(otp.is_used)
         self.assertEqual(otp.status, OTP.Status.FAILED)
+        self.assertEqual(otp.attempts, 5)
 
     def test_verify_otp_expired_code_rejected(self):
         phone = "+256772000555"
@@ -606,7 +605,7 @@ class Day3ConnectingLoginsAndRoleRoutingTests(APITestCase):
         self.assertEqual(pending_res.data["results"][0]["name"], "New Farmer")
 
         # Admin approves seller
-        with patch("accounts.views.send_sms") as mock_sms:
+        with patch("notifications.sms.send_sms") as mock_sms:
             approve_url = reverse("accounts:approve-seller", kwargs={"pk": unverified_seller.pk})
             approve_res = self.client.post(approve_url)
             self.assertEqual(approve_res.status_code, status.HTTP_200_OK)

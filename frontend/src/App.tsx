@@ -12,6 +12,7 @@ import { ENDPOINTS } from "./api/endpoints";
 
 import { PriceRail } from "./components/PriceRail";
 import { MobileNav } from "./components/MobileNav";
+import { Sidebar } from "./components/Sidebar";
 import { BottomNav } from "./components/BottomNav";
 const Landing = React.lazy(() => import("./landing/Landing"));
 const Auth = React.lazy(() => import("./auth/Auth"));
@@ -26,7 +27,6 @@ const LazyFallback = () => (
 );
 
 import { Button } from "./components/ui/Button";
-import { SegmentedControl } from "./components/ui/SegmentedControl";
 
 export default function App() {
   const { user, logout, loading: authLoading } = useAuth();
@@ -38,11 +38,11 @@ export default function App() {
 
 
   // ── Data state (start with seed data, will be replaced by API calls) ──
-  const [listings, setListings] = useState(SEED_LISTINGS);
-  const [plans, setPlans] = useState(SEED_PLANS);
-  const [orders, setOrders] = useState(SEED_ORDERS);
-  const [pending, setPending] = useState(SEED_PENDING);
-  const [disputes, setDisputes] = useState(SEED_DISPUTES);
+  const [listings, setListings] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [pending, setPending] = useState<any[]>([]);
+  const [disputes, setDisputes] = useState<any[]>([]);
   const [commission, setCommission] = useState(7);
   const [depositDefault, setDepositDefault] = useState(30);
   const [sms, setSms] = useState([
@@ -60,7 +60,7 @@ export default function App() {
 
   const toggleTheme = () => setTheme(prev => prev === "light" ? "dark" : "light");
 
-  const say = (m: string) => { toast.success(m, { duration: Infinity }); };
+  const say = (m: string) => { toast(m, { duration: 2500 }); };
   const pushSms = (to, text) => setSms(s => [{ to, text }, ...s].slice(0, 8));
 
   // ── Fetch data from API when user logs in ──
@@ -69,13 +69,16 @@ export default function App() {
       // Listings — public
       const listingsRes = await api.get(ENDPOINTS.listings);
       const apiListings = (listingsRes.results || listingsRes);
-      if (Array.isArray(apiListings) && apiListings.length > 0) {
+      if (Array.isArray(apiListings)) {
         setListings(apiListings.map((l: any) => ({
           id: `L-${l.id}`, seller: l.seller_name, sellerId: `S-${l.seller}`,
           sellerType: "", district: l.district, cat: l.category,
           name: l.name, qty: l.quantity, unit: l.unit, price: l.price,
-          rating: 0, ratings: 0, verified: l.seller_verified, top: false,
+          rating: l.seller_rating || 0, ratings: l.seller_rating_count || 0,
+          verified: l.seller_verified, top: (l.seller_rating >= 4.5 && l.seller_rating_count >= 5),
           voice: l.voice_duration || 0, photos: l.photo_count || 0,
+          thumbnail: l.thumbnail || null,
+          photos_data: l.photos || [],
           ref: Math.round(l.price * 1.06), note: l.description || "",
         })));
       }
@@ -85,7 +88,7 @@ export default function App() {
       // Harvest plans — public
       const plansRes = await api.get(ENDPOINTS.plans);
       const apiPlans = (plansRes.results || plansRes);
-      if (Array.isArray(apiPlans) && apiPlans.length > 0) {
+      if (Array.isArray(apiPlans)) {
         setPlans(apiPlans.map((p: any) => ({
           id: `H-${p.id}`, seller: p.seller_name, sellerId: `S-${p.seller}`,
           district: p.district, cat: p.category, name: p.name,
@@ -102,7 +105,7 @@ export default function App() {
       // Orders — requires auth
       const ordersRes = await api.get(ENDPOINTS.orders);
       const apiOrders = (ordersRes.results || ordersRes);
-      if (Array.isArray(apiOrders) && apiOrders.length > 0) {
+      if (Array.isArray(apiOrders)) {
         setOrders(apiOrders.map((o: any) => ({
           id: `ORD-${o.id}`, type: o.order_type,
           buyer: o.buyer_name, buyerId: `B-${o.buyer}`,
@@ -113,6 +116,8 @@ export default function App() {
           paid: true, provider: "MTN", rated: !!o.rating,
           stars: o.rating?.stars, placed: o.placed_at,
           depositPct: o.deposit_percentage,
+          thumbnail: o.thumbnail || null,
+          cat: o.category || "Vegetables",
         })));
       }
     } catch { /* keep seed data */ }
@@ -164,6 +169,11 @@ export default function App() {
     }
   }, [user, authLoading, fetchData]);
 
+  const handleTabChange = (newTab: string) => {
+    setTab(newTab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const signIn = (u?: any) => {
     // Auth context already sets the user — just close the modal
     setAuth(null);
@@ -177,29 +187,64 @@ export default function App() {
     say("Logged out");
   };
 
-  const NAV = {
-    buyer: [["browse", t.browse], ["preorders", t.harvest], ["myorders", t.myorders]],
-    seller: [["home", t.overview], ["listings", t.listings], ["plans", t.harvest], ["sorders", t.orders], ["sratings", t.ratings], ["payouts", t.payouts]],
-    admin: [["overview", t.overview], ["verify", t.verify], ["accounts", t.accounts], ["disputes", t.disputes], ["adelivery", t.delivery], ["areports", t.reports]],
-  };
-
-  const BOTTOM_NAV = {
+  const SIDEBAR_NAV = {
     buyer: [
-      { id: "browse", label: "Shop", icon: "bx-store-alt" },
-      { id: "preorders", label: "Pre-order", icon: "bx-calendar" },
-      { id: "myorders", label: "Orders", icon: "bx-receipt" }
+      { id: "browse", label: t.browse, icon: "bx-store-alt" },
+      { id: "preorders", label: t.harvest, icon: "bx-calendar" },
+      { id: "myorders", label: t.myorders, icon: "bx-receipt" }
     ],
     seller: [
-      { id: "home", label: "Home", icon: "bx-home-alt-2" },
-      { id: "listings", label: "Listings", icon: "bx-list-ul" },
-      { id: "sorders", label: "Orders", icon: "bx-package" }
+      { id: "home", label: t.overview, icon: "bx-home-alt-2" },
+      { id: "listings", label: t.listings, icon: "bx-list-ul" },
+      { id: "plans", label: t.harvest, icon: "bx-calendar" },
+      { id: "sorders", label: t.orders, icon: "bx-package" },
+      { id: "sratings", label: t.ratings, icon: "bx-star" },
+      { id: "payouts", label: t.payouts, icon: "bx-money" }
     ],
     admin: [
-      { id: "overview", label: "Dashboard", icon: "bx-pie-chart-alt-2" },
-      { id: "verify", label: "Verify", icon: "bx-check-shield" },
-      { id: "disputes", label: "Disputes", icon: "bx-error-circle" }
+      { id: "overview", label: t.overview, icon: "bx-pie-chart-alt-2" },
+      { id: "verify", label: t.verify, icon: "bx-check-shield" },
+      { id: "accounts", label: t.accounts, icon: "bx-group" },
+      { id: "disputes", label: t.disputes, icon: "bx-error-circle" },
+      { id: "adelivery", label: t.delivery, icon: "bx-truck" },
+      { id: "areports", label: t.reports, icon: "bx-bar-chart-alt-2" }
     ]
   };
+
+  const BOTTOM_NAV: Record<string, { tabs: { id: string; label: string; icon: string }[]; moreTabs?: { id: string; label: string; icon: string }[] }> = {
+    buyer: {
+      tabs: [
+        { id: "browse", label: t.browse, icon: "bx-store-alt" },
+        { id: "preorders", label: t.harvest, icon: "bx-calendar" },
+        { id: "myorders", label: t.myorders, icon: "bx-receipt" }
+      ]
+    },
+    seller: {
+      tabs: [
+        { id: "home", label: t.overview, icon: "bx-home-alt-2" },
+        { id: "listings", label: t.listings, icon: "bx-list-ul" },
+        { id: "plans", label: t.harvest, icon: "bx-calendar" },
+        { id: "sorders", label: t.orders, icon: "bx-package" }
+      ],
+      moreTabs: [
+        { id: "sratings", label: t.ratings, icon: "bx-star" },
+        { id: "payouts", label: t.payouts, icon: "bx-money" }
+      ]
+    },
+    admin: {
+      tabs: [
+        { id: "overview", label: t.overview, icon: "bx-pie-chart-alt-2" },
+        { id: "verify", label: t.verify, icon: "bx-check-shield" },
+        { id: "accounts", label: t.accounts, icon: "bx-group" },
+        { id: "disputes", label: t.disputes, icon: "bx-error-circle" }
+      ],
+      moreTabs: [
+        { id: "adelivery", label: t.delivery, icon: "bx-truck" },
+        { id: "areports", label: t.reports, icon: "bx-bar-chart-alt-2" }
+      ]
+    }
+  };
+
 
   // Build a session-like object for child components (backward compatible)
   const session = user ? {
@@ -226,61 +271,58 @@ export default function App() {
     <div className="tg">
       <header className="topbar">
         <div className="topbar-in">
-          <button onClick={() => setScreen(session ? "app" : "landing")} style={{ textAlign: "left", padding: 0 }}>
+          <button onClick={() => setScreen(session ? "app" : "landing")} style={{ textAlign: "left", padding: 0, display: "flex", flexDirection: "column" }}>
             <div className="brand">Tunda<span>Gula</span></div>
-            <div className="tagline">From farm, to you</div>
+            <div className="tagline desktop-only">From farm, to you</div>
           </button>
 
           {screen === "landing" && (
-            <div className="row" style={{ gap: 24, marginLeft: 32 }}>
+            <nav className="topbar-nav desktop-only">
               {[["how", t.how], ["who", t.who], ["prices", t.prices]].map(([id, label]) => (
-                <a key={id} href={"#" + id} style={{ fontSize: 14, fontWeight: 500, color: "var(--color-fog)" }}>{label}</a>
+                <a key={id} href={"#" + id}>{label}</a>
               ))}
-            </div>
+            </nav>
           )}
 
-          <div className="row" style={{ marginLeft: "auto", gap: 16 }}>
+          <div className="topbar-actions">
             <button
               onClick={toggleTheme}
-              style={{
-                background: "none", border: "none", cursor: "pointer",
-                color: "var(--color-slate)", display: "flex", alignItems: "center", justifyContent: "center", padding: 8
-              }}
+              className="tb-ctl tb-icon"
               title="Toggle Theme"
+              aria-label="Toggle theme"
             >
               <i className={`bx ${theme === 'dark' ? 'bx-sun' : 'bx-moon'}`} style={{ fontSize: 20 }}></i>
             </button>
-            <div className="lang desktop-nav-links" style={{ display: 'flex', gap: '4px' }}>{["en", "lg", "sw"].map(l =>
-              <button key={l} 
-                style={{ 
-                  padding: '6px 10px', 
-                  fontSize: '12px', 
-                  fontWeight: 600, 
-                  borderRadius: 'var(--radius-sm)', 
-                  border: '1px solid',
-                  borderColor: lang === l ? 'var(--color-lime-voltage)' : 'var(--color-slate)',
-                  color: lang === l ? 'var(--color-forest-ink)' : 'var(--color-fog)',
-                  background: lang === l ? 'var(--color-lime-voltage)' : 'transparent'
-                }}
-                onClick={() => setLang(l)}>{l.toUpperCase()}</button>)}
+            <div className="tb-langs desktop-only">
+              {["en", "lg", "sw"].map(l => (
+                <button key={l} className={`tb-ctl tb-lang${lang === l ? " on" : ""}`} onClick={() => setLang(l)}>
+                  {l.toUpperCase()}
+                </button>
+              ))}
             </div>
+            <span className="tb-divider desktop-only"></span>
             {session ? (
-              <div className="desktop-nav-links row" style={{ gap: 16 }}>
-                <div style={{ textAlign: 'right', lineHeight: 1.2 }}>
-                  <b style={{ display: 'block', fontSize: '14px', color: 'var(--color-paper)' }}>{session.name}</b>
-                  <span style={{ fontSize: '12px', color: 'var(--color-pebble)' }}>
-                    {session.role === "admin" ? "Administrator" : typeLabel(session.type)}
-                  </span>
+              <div className="desktop-only row" style={{ gap: 14 }}>
+                <div className="tb-user">
+                  <b>{session.name}</b>
+                  <span>{session.role === "admin" ? "Administrator" : typeLabel(session.type)}</span>
                 </div>
-                <Button variant="outline" onClick={signOut}>{t.logout}</Button>
+                <Button variant="outline" className="btn-header" onClick={signOut}>{t.logout}</Button>
               </div>
             ) : (
-              <div className="desktop-nav-links row" style={{ gap: 16 }}>
-                <Button variant="text" onClick={() => setAuth({ mode: "login" })} style={{ color: 'var(--color-paper)' }}>{t.login}</Button>
-                <Button variant="primary" onClick={() => setAuth({ mode: "join" })}>{t.join}</Button>
+              <div className="desktop-only row" style={{ gap: 12 }}>
+                <Button variant="text" className="btn-header" onClick={() => setAuth({ mode: "login" })} style={{ color: 'var(--color-paper)', textDecoration: 'none' }}>{t.login}</Button>
+                <Button variant="primary" className="btn-header" onClick={() => setAuth({ mode: "join" })}>{t.join}</Button>
               </div>
             )}
-            <MobileNav onAuthOpen={() => setAuth({ mode: "login" })} />
+            <MobileNav
+              onAuthOpen={() => setAuth({ mode: "login" })}
+              lang={lang}
+              setLang={setLang}
+              tabs={session ? SIDEBAR_NAV[session.role as keyof typeof SIDEBAR_NAV] : undefined}
+              activeTab={tab}
+              onTabChange={handleTabChange}
+            />
           </div>
         </div>
       </header>
@@ -290,27 +332,41 @@ export default function App() {
       {screen === "landing" && <Suspense fallback={<LazyFallback />}><Landing t={t} onJoin={(role) => setAuth({ mode: "join", role })} onLogin={() => setAuth({ mode: "login" })} /></Suspense>}
 
       {screen === "app" && session && (
-        <div className="shell" style={{ marginTop: '40px' }}>
-          <div className="desktop-nav-links" style={{ marginBottom: '32px' }}>
-            <SegmentedControl 
-              segments={NAV[session.role].map(([k, label]) => ({ id: k as string, label: label as string }))}
-              activeId={tab}
-              onChange={setTab} 
-            />
+        <div className="app-layout">
+          <Sidebar tabs={SIDEBAR_NAV[session.role as keyof typeof SIDEBAR_NAV]} activeId={tab} onChange={handleTabChange} />
+          <div className="shell main-content">
+            <Suspense fallback={<LazyFallback />}>
+              {session.role === "buyer" && <BuyerApp tab={tab} onTabChange={handleTabChange} {...ctx} />}
+              {session.role === "seller" && <SellerApp tab={tab} {...ctx} />}
+              {session.role === "admin" && <AdminApp tab={tab} {...ctx} />}
+            </Suspense>
           </div>
-          <BottomNav tabs={BOTTOM_NAV[session.role]} activeId={tab} onChange={setTab} />
-          <Suspense fallback={<LazyFallback />}>
-            {session.role === "buyer" && <BuyerApp tab={tab} {...ctx} />}
-            {session.role === "seller" && <SellerApp tab={tab} {...ctx} />}
-            {session.role === "admin" && <AdminApp tab={tab} {...ctx} />}
-          </Suspense>
+          {BOTTOM_NAV[session.role] && (
+            <BottomNav
+              tabs={BOTTOM_NAV[session.role].tabs}
+              moreTabs={BOTTOM_NAV[session.role].moreTabs}
+              activeId={tab}
+              onChange={handleTabChange}
+            />
+          )}
         </div>
       )}
 
       <Suspense fallback={null}>
         {auth && <Auth init={auth} onClose={() => setAuth(null)} onDone={signIn} say={say} />}
       </Suspense>
-      <Toaster position="top-center" richColors closeButton duration={Infinity} />
+      <Toaster
+        position="top-center"
+        duration={2500}
+        visibleToasts={1}
+        toastOptions={{
+          unstyled: true,
+          classNames: {
+            toast: "tg-toast",
+            title: "tg-toast-title",
+          },
+        }}
+      />
     </div>
   );
 }

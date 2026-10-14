@@ -6,6 +6,7 @@ import { Badge } from "../components/Badge";
 import { Button } from "../components/ui/Button";
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
+import { Thumb } from "../components/Thumb";
 
 export default function SellerListings({ mine, setListings, onCreateListing }) {
   const handleDelete = async (id: string) => {
@@ -39,9 +40,9 @@ export default function SellerListings({ mine, setListings, onCreateListing }) {
         }
       />
 
-      <div className="stack" style={{ gap: "16px" }}>
+      <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
         {mine.length === 0 ? (
-          <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
+          <div className="card" style={{ gridColumn: "1 / -1", textAlign: "center", padding: "48px 24px" }}>
             <h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 12px", color: "var(--color-obsidian)" }}>No active listings</h2>
             <Button variant="primary" onClick={onCreateListing}>
               Create your first listing
@@ -49,56 +50,46 @@ export default function SellerListings({ mine, setListings, onCreateListing }) {
           </div>
         ) : (
           mine.map(l => (
-            <div className="card" key={l.id}>
-              <div className="between" style={{ alignItems: "center" }}>
-                <div className="row" style={{ gap: "16px", alignItems: "flex-start" }}>
-                  <div
-                    style={{
-                      width: 54,
-                      height: 54,
-                      background: "var(--color-fog)",
-                      borderRadius: "var(--radius-cards)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 26,
-                    }}
-                  >
-                    {EMOJI[l.cat]}
-                  </div>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 700, color: "var(--color-obsidian)" }}>{l.name}</h3>
-                    <div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "2px" }}>
-                      {l.cat} · {l.photos} photos{l.voice ? ` · ${l.voice}s voice` : ""}
-                    </div>
-                    <div className="row" style={{ marginTop: "8px", gap: "8px" }}>
-                      {l.qty > 0 ? <Badge tone="b-green">Active</Badge> : <Badge tone="b-red">Sold out</Badge>}
-                      <span style={{ fontFamily: "var(--font-monospace)", fontSize: "13px", fontWeight: 600, color: "var(--color-forest-ink)" }}>
-                        {ugx(l.price)} / {l.unit}
-                      </span>
-                    </div>
-                  </div>
+            <div className="card" key={l.id} style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              <div style={{ position: "relative", width: "100%", aspectRatio: "1/1" }}>
+                <Thumb 
+                  src={l.thumbnail} 
+                  alt={l.name} 
+                  fallback={EMOJI[l.cat]} 
+                  size="100%" 
+                  className="listing-thumb"
+                />
+                <div style={{ position: "absolute", top: 8, right: 8, zIndex: 2 }}>
+                  {l.qty > 0 ? <Badge tone="b-green" style={{ background: "var(--color-paper)" }}>Active</Badge> : <Badge tone="b-red" style={{ background: "var(--color-paper)" }}>Sold out</Badge>}
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "var(--color-slate)", marginBottom: "4px" }}>
-                    Quantity ({l.unit})
-                  </label>
-                  <div className="row" style={{ gap: "8px", alignItems: "center" }}>
-                    <button 
-                      className="btn-sm" 
-                      style={{ color: "var(--color-alarm-red)", borderColor: "var(--color-alarm-red)" }}
-                      onClick={() => handleDelete(l.id)}
-                    >
-                      Delete
-                    </button>
+              </div>
+              <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "var(--color-obsidian)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</h3>
+                <div style={{ fontSize: "12px", color: "var(--color-slate)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {l.cat} · {l.photos} photos{l.voice ? ` · ${l.voice}s` : ""}
+                </div>
+                <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--color-forest-ink)", marginTop: 4 }}>
+                  {ugx(l.price)} <span style={{ fontSize: "11px", fontWeight: 400, color: "var(--color-pebble)" }}>/{l.unit}</span>
+                </div>
+                
+                <div style={{ marginTop: "auto", paddingTop: "8px", borderTop: "1px solid var(--color-fog)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 600, color: "var(--color-slate)" }}>Qty:</span>
                     <input
                       type="number"
                       value={l.qty}
-                      style={{ width: "90px", textAlign: "right", fontWeight: 600 }}
+                      style={{ width: "54px", padding: "4px", fontSize: "13px", textAlign: "center", borderRadius: "var(--radius-buttons)", border: "1px solid var(--color-fog)" }}
                       onChange={e => setListings(ls => ls.map(x => x.id === l.id ? { ...x, qty: Math.max(0, Number(e.target.value) || 0) } : x))}
                       onBlur={(e) => handleUpdateQuantity(l.id, Number(e.target.value) || 0)}
                     />
                   </div>
+                  <button 
+                    style={{ background: "none", border: "none", color: "var(--color-alarm-red)", cursor: "pointer", padding: "4px" }}
+                    onClick={() => handleDelete(l.id)}
+                    title="Delete"
+                  >
+                    <i className="bx bx-trash" style={{ fontSize: 18 }}></i>
+                  </button>
                 </div>
               </div>
             </div>

@@ -5,8 +5,8 @@ from . import views
 app_name = "listings"
 
 router = DefaultRouter()
-router.register(r"", views.ListingViewSet, basename="listing")
 router.register(r"plans", views.PreHarvestPlanViewSet, basename="plan")
+router.register(r"", views.ListingViewSet, basename="listing")
 
 urlpatterns = [
     path("seller/dashboard/", views.seller_dashboard, name="seller-dashboard"),

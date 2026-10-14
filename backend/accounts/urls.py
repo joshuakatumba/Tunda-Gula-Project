@@ -17,9 +17,11 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("logout-all/", views.logout_all, name="logout-all"),
 
-    # Admin — seller verification
+    # Admin — seller verification & platform stats
+    path("admin/stats/", views.admin_platform_stats, name="admin-stats"),
     path("pending/", views.PendingVerificationsView.as_view(), name="pending"),
     path("<int:pk>/approve/", views.approve_seller, name="approve-seller"),
     path("<int:pk>/reject/", views.reject_seller, name="reject-seller"),
+    path("<int:pk>/toggle-active/", views.toggle_active, name="toggle-active"),
 ]
 

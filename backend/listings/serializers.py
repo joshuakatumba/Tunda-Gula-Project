@@ -17,17 +17,31 @@ class ListingSerializer(serializers.ModelSerializer):
     seller_verified = serializers.BooleanField(source="seller.is_verified", read_only=True)
     photo_count = serializers.IntegerField(source="photos.count", read_only=True)
     photos = ListingPhotoSerializer(many=True, read_only=True)
+    seller_rating = serializers.SerializerMethodField()
+    seller_rating_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Listing
         fields = [
             "id", "name", "category", "quantity", "unit", "price",
             "description", "district", "voice_duration", "voice_file",
+            "thumbnail",
             "seller", "seller_name", "seller_verified",
+            "seller_rating", "seller_rating_count",
             "photo_count", "photos",
             "is_active", "created_at",
         ]
         read_only_fields = ["seller", "created_at"]
+
+    def get_seller_rating(self, obj):
+        from orders.models import Rating
+        from django.db.models import Avg
+        avg = Rating.objects.filter(seller=obj.seller).aggregate(Avg("stars"))["stars__avg"]
+        return round(avg, 1) if avg else 0
+
+    def get_seller_rating_count(self, obj):
+        from orders.models import Rating
+        return Rating.objects.filter(seller=obj.seller).count()
 
 
 class ListingCreateSerializer(serializers.ModelSerializer):
@@ -43,17 +57,24 @@ class ListingCreateSerializer(serializers.ModelSerializer):
     )
     # Accept a single voice note file (optional)
     voice_file = serializers.FileField(required=False, allow_null=True)
+    district = serializers.CharField(required=False, allow_blank=True, default="")
 
     class Meta:
         model = Listing
         fields = [
             "name", "category", "quantity", "unit", "price",
             "description", "voice_duration", "district",
-            "voice_file", "photo_files",
+            "voice_file", "photo_files", "thumbnail",
         ]
 
     def create(self, validated_data):
         photo_files = validated_data.pop("photo_files", [])
+        if not validated_data.get("district"):
+            request = self.context.get("request")
+            if request and getattr(request.user, "district", None):
+                validated_data["district"] = request.user.district
+            else:
+                validated_data["district"] = "Wakiso"
         listing = super().create(validated_data)
         # Save each photo as a ListingPhoto record
         for i, photo in enumerate(photo_files):
@@ -75,6 +96,7 @@ class PreHarvestPlanSerializer(serializers.ModelSerializer):
 
     seller_name = serializers.CharField(source="seller.name", read_only=True)
     available = serializers.IntegerField(read_only=True)
+    district = serializers.CharField(required=False, allow_blank=True, default="")
 
     class Meta:
         model = PreHarvestPlan
@@ -87,4 +109,13 @@ class PreHarvestPlanSerializer(serializers.ModelSerializer):
             "is_active", "created_at",
         ]
         read_only_fields = ["seller", "reserved", "created_at"]
+
+    def create(self, validated_data):
+        if not validated_data.get("district"):
+            request = self.context.get("request")
+            if request and getattr(request.user, "district", None):
+                validated_data["district"] = request.user.district
+            else:
+                validated_data["district"] = "Wakiso"
+        return super().create(validated_data)
 

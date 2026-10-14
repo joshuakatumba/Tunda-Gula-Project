@@ -8,9 +8,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const Card: React.FC<CardProps> = ({ variant = 'paper', children, style, ...props }) => {
-  const baseStyle: React.CSSProperties = {
-    transition: 'all 0.2s ease',
-  };
+  const baseStyle: React.CSSProperties = {};
 
   const variants: Record<CardVariant, React.CSSProperties> = {
     paper: {

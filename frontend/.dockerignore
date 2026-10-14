@@ -1,8 +1,26 @@
+# Dependencies & build
 node_modules/
 dist/
+
+# Git
+.git/
+.gitignore
+
+# Environment files
 .env
 .env.*
-!.env.example
-.git/
+.env.example
+
+# Docker
 .dockerignore
 Dockerfile
+
+# Documentation
+*.md
+LICENSE
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
