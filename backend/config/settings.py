@@ -27,7 +27,14 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.environ.get(
+        "ALLOWED_HOSTS",
+        "localhost,127.0.0.1,backend,tundagula.com,www.tundagula.com",
+    ).split(",")
+    if h.strip()
+]
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -77,14 +84,26 @@ MIDDLEWARE = [
 ]
 
 
-# ---------------------------------------------------------------------------
-# CORS — allow React dev server
-# ---------------------------------------------------------------------------
-CORS_ALLOWED_ORIGINS = os.environ.get(
-    "CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3002"
-).split(",")
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:3000,http://localhost:3002,http://localhost:5173,https://tundagula.com,https://www.tundagula.com,http://tundagula.com,http://www.tundagula.com",
+    ).split(",")
+    if origin.strip()
+]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF Trusted Origins (required for POST/auth requests on custom domains)
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://localhost:3000,http://localhost:8000,https://tundagula.com,https://www.tundagula.com,http://tundagula.com,http://www.tundagula.com",
+    ).split(",")
+    if origin.strip()
+]
 
 
 # ---------------------------------------------------------------------------
@@ -115,19 +134,36 @@ TEMPLATES = [
 
 
 # ---------------------------------------------------------------------------
-# Database — PostgreSQL (Docker) with SQLite fallback (local dev)
+# Database — PostgreSQL (Docker/Production) with SQLite fallback
 # ---------------------------------------------------------------------------
-DB_ENGINE = os.environ.get("DB_ENGINE", "sqlite3")
+DB_ENGINE = os.environ.get("DB_ENGINE", "postgresql").lower()
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-if DB_ENGINE == "postgresql":
+if DATABASE_URL:
+    import urllib.parse
+    urllib.parse.uses_netloc.append("postgres")
+    urllib.parse.uses_netloc.append("postgresql")
+    url = urllib.parse.urlparse(DATABASE_URL)
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.environ.get("DB_NAME", "tundagula"),
-            "USER": os.environ.get("DB_USER", "tundagula"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", "tundagula"),
+            "NAME": url.path[1:],
+            "USER": url.username,
+            "PASSWORD": url.password,
+            "HOST": url.hostname,
+            "PORT": url.port or 5432,
+            "CONN_MAX_AGE": 600,
+        }
+    }
+elif DB_ENGINE in ("postgresql", "postgres"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME") or os.environ.get("POSTGRES_DB", "tundagula"),
+            "USER": os.environ.get("DB_USER") or os.environ.get("POSTGRES_USER", "tundagula"),
+            "PASSWORD": os.environ.get("DB_PASSWORD") or os.environ.get("POSTGRES_PASSWORD", "tundagula_secret_password"),
             "HOST": os.environ.get("DB_HOST", "db"),
-            "PORT": os.environ.get("DB_PORT", "5432"),
+            "PORT": int(os.environ.get("DB_PORT", 5432)),
             "CONN_MAX_AGE": 600,  # 10 minutes connection pooling
         }
     }
@@ -141,9 +177,14 @@ else:
 
 
 # ---------------------------------------------------------------------------
-# Custom user model
+# Custom user model & authentication backends
 # ---------------------------------------------------------------------------
 AUTH_USER_MODEL = "accounts.User"
+
+AUTHENTICATION_BACKENDS = [
+    "accounts.authentication.EmailOrPhoneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
 
 
 # ---------------------------------------------------------------------------
