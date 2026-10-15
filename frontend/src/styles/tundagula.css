@@ -412,8 +412,10 @@ input::placeholder, textarea::placeholder {
   border-bottom: 2px solid var(--color-lime-voltage);
   overflow: hidden;
   position: relative;
-  height: 32px;
+  height: 36px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 
 @media (min-width: 768px) {
@@ -423,7 +425,7 @@ input::placeholder, textarea::placeholder {
 .rail-tag {
   background: var(--color-lime-voltage);
   color: var(--color-forest-ink);
-  padding: 8px 10px;
+  padding: 8px 12px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -431,29 +433,75 @@ input::placeholder, textarea::placeholder {
   display: flex;
   align-items: center;
   position: absolute;
-  z-index: 2;
+  z-index: 10;
   top: 0;
   bottom: 0;
   left: 0;
+  white-space: nowrap;
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.45);
 }
 
 @media (min-width: 768px) {
   .rail-tag {
-    padding: 10px 14px;
+    padding: 10px 16px;
     font-size: 11px;
   }
 }
 
-.rail-marquee {
-  display: flex;
-  width: max-content;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-left: 140px;
+.rail-tag::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: 48px;
+  background: linear-gradient(to right, rgba(16, 24, 20, 0.95), transparent);
+  pointer-events: none;
 }
 
-@media (min-width: 768px) {
-  .rail-marquee { padding-left: 250px; }
+.rail::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 48px;
+  background: linear-gradient(to left, rgba(16, 24, 20, 0.95), transparent);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.rail-marquee {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+.rail-track {
+  display: flex;
+  width: max-content;
+  animation: rail-ticker 40s linear infinite;
+  will-change: transform;
+}
+
+.rail:hover .rail-track {
+  animation-play-state: paused;
+}
+
+.rail-content {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+@keyframes rail-ticker {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
 }
 
 .chalk {
@@ -464,6 +512,11 @@ input::placeholder, textarea::placeholder {
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.chalk:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .chalk .c-name {

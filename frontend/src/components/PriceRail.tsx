@@ -35,21 +35,43 @@ export const PriceRail = ({ t }) => {
     };
   }, []);
 
-  // Duplicate for smooth infinite marquee scrolling
-  const marqueePrices = [...prices, ...prices];
+  // Ensure plenty of items in each block for wide screens
+  const blockItems = [...prices, ...prices];
 
   return (
     <div className="rail">
-      <div className="rail-tag" style={{ position: 'absolute', zIndex: 2 }}>{t.live} · InfoTrade Connect · wk 29</div>
+      <div className="rail-tag">{t.live} · InfoTrade Connect · wk 29</div>
       <div className="rail-marquee">
-        {marqueePrices.map((p, i) => (
-          <div className="chalk" key={`${p.name}-${i}`}>
-            <div className="c-name">{p.name} / {p.unit}</div>
-            <div className="c-price">{p.price.toLocaleString()}{" "}
-              <span className={p.move > 0 ? "up" : p.move < 0 ? "down" : ""}>{p.move > 0 ? "▲" : p.move < 0 ? "▼" : "–"}{p.move !== 0 && Math.abs(p.move) + "%"}</span>
-            </div>
+        <div className="rail-track">
+          <div className="rail-content">
+            {blockItems.map((p, i) => (
+              <div className="chalk" key={`a-${p.name}-${i}`}>
+                <div className="c-name">{p.name} / {p.unit}</div>
+                <div className="c-price">
+                  {p.price.toLocaleString()}{" "}
+                  <span className={p.move > 0 ? "up" : p.move < 0 ? "down" : ""}>
+                    {p.move > 0 ? "▲" : p.move < 0 ? "▼" : "–"}
+                    {p.move !== 0 && Math.abs(p.move) + "%"}
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+          <div className="rail-content" aria-hidden="true">
+            {blockItems.map((p, i) => (
+              <div className="chalk" key={`b-${p.name}-${i}`}>
+                <div className="c-name">{p.name} / {p.unit}</div>
+                <div className="c-price">
+                  {p.price.toLocaleString()}{" "}
+                  <span className={p.move > 0 ? "up" : p.move < 0 ? "down" : ""}>
+                    {p.move > 0 ? "▲" : p.move < 0 ? "▼" : "–"}
+                    {p.move !== 0 && Math.abs(p.move) + "%"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
