@@ -72,7 +72,22 @@ async function request<T = any>(path: string, options?: RequestInit): Promise<T>
   // No content
   if (res.status === 204) return {} as T;
 
-  const data = await res.json();
+  const contentType = res.headers.get("content-type") || "";
+  let data: any = {};
+
+  if (contentType.includes("application/json")) {
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+  } else {
+    if (!res.ok) {
+      const err: any = new Error(`Server returned ${res.status}: ${res.statusText || "Service unavailable"}`);
+      err.status = res.status;
+      throw err;
+    }
+  }
 
   if (!res.ok) {
     const err: any = new Error(data.detail || data.error || "Request failed");

@@ -1,10 +1,14 @@
 # Production override for Docker Compose
-# Maps the frontend to port 80 directly for public web access
+# Maps the frontend to port 80 and 443 with SSL certificates
 
 services:
   frontend:
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
       
   # No ports exposed for backend; it is accessed internally by the frontend container/nginx proxy
   backend:
