@@ -30,7 +30,7 @@ jobs:
           key: ${{ secrets.AWS_SSH_KEY || secrets.AZURE_SSH_KEY }}
           script: |
             set -e
-            echo "🚀 Deploying latest code on AWS EC2..."
+            echo "Deploying latest code on AWS EC2..."
             cd ~/Tunda-Gula-Project
 
             # Pull latest changes from main branch
@@ -42,4 +42,4 @@ jobs:
             # Remove dangling images to keep free-tier disk clean
             docker image prune -f
 
-            echo "✅ Deployment completed successfully!"
+            echo "Deployment completed successfully!"
