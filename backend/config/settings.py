@@ -248,6 +248,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ---------------------------------------------------------------------------
 MTN_MOMO_API_KEY = os.environ.get("MTN_MOMO_API_KEY", "")
 MTN_MOMO_API_SECRET = os.environ.get("MTN_MOMO_API_SECRET", "")
+
+# Google OAuth (strictly for customer / buyer accounts)
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 AIRTEL_MONEY_API_KEY = os.environ.get("AIRTEL_MONEY_API_KEY", "")
 AIRTEL_MONEY_API_SECRET = os.environ.get("AIRTEL_MONEY_API_SECRET", "")
 
