@@ -1,5 +1,12 @@
 from rest_framework import serializers
-from .models import Order, Rating
+from .models import Order, Rating, SubscriptionOrder
+
+
+DELIVERY_FEES = {
+    Order.DeliveryMode.MOTORCYCLE: 5000,
+    Order.DeliveryMode.TRUCK: 25000,
+    Order.DeliveryMode.PICKUP: 0,
+}
 
 
 class RatingSerializer(serializers.ModelSerializer):
@@ -14,9 +21,6 @@ class RatingSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    """
-    Full order representation — maps to MyOrders.tsx and SellerOrders.tsx.
-    """
     buyer_name = serializers.CharField(source="buyer.name", read_only=True)
     seller_name = serializers.CharField(source="seller.name", read_only=True)
     total = serializers.IntegerField(read_only=True)
@@ -42,49 +46,66 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             "id", "order_type", "item_name", "quantity", "unit",
-            "price_per_unit", "total", "deposit_amount", "deposit_percentage",
+            "price_per_unit", "delivery_fee", "batch_ref", "total", "deposit_amount", "deposit_percentage",
             "status", "status_label", "delivery_mode",
             "buyer", "buyer_name", "seller", "seller_name",
             "listing", "harvest_plan",
             "rating", "thumbnail", "category",
             "placed_at", "accepted_at", "delivered_at",
         ]
-        read_only_fields = [
-            "buyer", "placed_at", "accepted_at", "delivered_at",
-        ]
+        read_only_fields = fields
 
 
 class OrderCreateSerializer(serializers.ModelSerializer):
-    """For placing orders from Checkout.tsx."""
+    """For placing orders — server-authoritative pricing & stock validation."""
 
     class Meta:
         model = Order
-        fields = [
-            "id", "listing", "item_name", "quantity", "unit",
-            "price_per_unit", "delivery_mode",
-        ]
+        fields = ["id", "listing", "quantity", "delivery_mode"]
         read_only_fields = ["id"]
 
     def validate(self, attrs):
         listing = attrs.get("listing")
         quantity = attrs.get("quantity")
-        if listing and quantity is not None:
-            if quantity <= 0:
-                raise serializers.ValidationError({"quantity": "Quantity must be at least 1."})
-            if listing.quantity < quantity:
-                raise serializers.ValidationError({
-                    "quantity": f"Only {listing.quantity} {listing.unit} available in stock."
-                })
+        if not listing or not listing.is_active:
+            raise serializers.ValidationError({"listing": "A valid active listing is required."})
+        if quantity is None or quantity <= 0:
+            raise serializers.ValidationError({"quantity": "Quantity must be at least 1."})
+        if listing.quantity < quantity:
+            raise serializers.ValidationError({"quantity": f"Only {listing.quantity} {listing.unit} available in stock."})
         return attrs
 
 
 class PreorderCreateSerializer(serializers.ModelSerializer):
-    """For placing pre-orders from PreorderModal.tsx."""
+    """For placing pre-orders — server-authoritative pricing & available yield validation."""
 
     class Meta:
         model = Order
-        fields = [
-            "id", "harvest_plan", "item_name", "quantity", "unit",
-            "price_per_unit", "deposit_percentage",
-        ]
+        fields = ["id", "harvest_plan", "quantity"]
         read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        plan = attrs.get("harvest_plan")
+        quantity = attrs.get("quantity")
+        if not plan or not plan.is_active:
+            raise serializers.ValidationError({"harvest_plan": "A valid active harvest plan is required."})
+        if quantity is None or quantity <= 0:
+            raise serializers.ValidationError({"quantity": "Quantity must be at least 1."})
+        if plan.available < quantity:
+            raise serializers.ValidationError({"quantity": f"Only {plan.available} {plan.unit} available to reserve."})
+        return attrs
+
+
+class SubscriptionOrderSerializer(serializers.ModelSerializer):
+    listing_name = serializers.CharField(source="listing.name", read_only=True)
+    unit = serializers.CharField(source="listing.unit", read_only=True)
+    price = serializers.IntegerField(source="listing.price", read_only=True)
+
+    class Meta:
+        model = SubscriptionOrder
+        fields = [
+            "id", "listing", "listing_name", "unit", "price",
+            "quantity", "frequency", "delivery_mode", "is_active",
+            "next_run_date", "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]

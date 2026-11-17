@@ -241,5 +241,20 @@
   "admin.export_tx": "Alipoota ya Ssente (CSV)",
   "admin.export_users": "Abakozesa (CSV)",
   "admin.export_gmv": "Omuwendo gw'ebyatundibwa (CSV)",
-  "admin.map_title": "Maapu y'Abalimi"
+  "admin.map_title": "Maapu y'Abalimi",
+  "nav.records": "Ebitabo",
+  "seller.records": "Ebitabo by'Ennimiro",
+  "seller.expenses": "Ensasaanya",
+  "seller.net_profit": "Amagoba",
+  "seller.insights": "Okwekenneenya Akatale",
+  "seller.add_expense": "+ Teekako ensasaanya",
+  "seller.crop": "Ekirime",
+  "seller.amount": "Ssente (UGX)",
+  "seller.exp_seeds": "Ensigo",
+  "seller.exp_fertilizer": "Ebigimusa",
+  "seller.exp_labor": "Abakozi",
+  "seller.exp_transport": "Entambula",
+  "seller.exp_other": "Ebirala",
+  "seller.no_records": "Tewali nsasaanya ewandiikiddwa",
+  "seller.export_csv": "Funa Alipoota"
 }

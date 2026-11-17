@@ -15,4 +15,14 @@ class DisputeSerializer(serializers.ModelSerializer):
             "resolution", "resolved_by", "resolved_by_name",
             "opened_at", "resolved_at",
         ]
-        read_only_fields = ["raised_by", "opened_at", "resolved_at", "resolved_by"]
+        read_only_fields = [
+            "raised_by", "status", "resolution",
+            "opened_at", "resolved_at", "resolved_by",
+        ]
+
+    def validate_order(self, order):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            if order.buyer != request.user and order.seller != request.user:
+                raise serializers.ValidationError("You can only dispute your own orders.")
+        return order

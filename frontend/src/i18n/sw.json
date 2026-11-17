@@ -241,5 +241,20 @@
   "admin.export_tx": "Miamala (CSV)",
   "admin.export_users": "Watumiaji (CSV)",
   "admin.export_gmv": "Mauzo (CSV)",
-  "admin.map_title": "Ramani ya Wakulima"
+  "admin.map_title": "Ramani ya Wakulima",
+  "nav.records": "Rekodi",
+  "seller.records": "Rekodi za Shamba",
+  "seller.expenses": "Gharama",
+  "seller.net_profit": "Faida Halisi",
+  "seller.insights": "Uchambuzi wa Soko",
+  "seller.add_expense": "+ Ongeza gharama",
+  "seller.crop": "Zao",
+  "seller.amount": "Kiasi (UGX)",
+  "seller.exp_seeds": "Mbegu",
+  "seller.exp_fertilizer": "Mbolea",
+  "seller.exp_labor": "Wafanyakazi",
+  "seller.exp_transport": "Usafiri",
+  "seller.exp_other": "Nyingine",
+  "seller.no_records": "Hakuna gharama bado",
+  "seller.export_csv": "Pakua Taarifa"
 }

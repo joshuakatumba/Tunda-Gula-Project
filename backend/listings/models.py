@@ -32,6 +32,11 @@ class Listing(models.Model):
         HEAD = "head", "Head"
         TRAY = "tray", "Tray"
 
+    class Grade(models.TextChoices):
+        A = "A", "Grade A"
+        B = "B", "Grade B"
+        C = "C", "Grade C"
+
     # --- Core fields from ListingForm.tsx ---
     seller = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -55,6 +60,8 @@ class Listing(models.Model):
     district = models.CharField(max_length=100)
 
     # --- Computed / display fields ---
+    grade = models.CharField(max_length=5, choices=Grade.choices, default=Grade.A)
+    is_promoted = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -187,3 +194,34 @@ class PreHarvestPlan(models.Model):
     @property
     def available(self):
         return self.quantity - self.reserved
+
+
+class FarmExpense(models.Model):
+    """Simple farm cost record per crop/season for profit & credit-ready bookkeeping."""
+
+    class Category(models.TextChoices):
+        SEEDS = "seeds", "Seeds"
+        FERTILIZER = "fertilizer", "Fertilizer"
+        LABOR = "labor", "Labor"
+        TRANSPORT = "transport", "Transport"
+        OTHER = "other", "Other"
+
+    seller = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="farm_expenses",
+        limit_choices_to={"role": "seller"},
+    )
+    crop_name = models.CharField(max_length=120)
+    category = models.CharField(max_length=20, choices=Category.choices, default=Category.OTHER)
+    amount = models.PositiveIntegerField(help_text="Expense amount in UGX")
+    note = models.CharField(max_length=200, blank=True, default="")
+    date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "tg_farm_expenses"
+        ordering = ["-date", "-created_at"]
+
+    def __str__(self):
+        return f"{self.crop_name} ({self.category}) — UGX {self.amount:,}"

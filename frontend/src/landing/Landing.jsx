@@ -1,11 +1,23 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Sprout, ShoppingBasket } from "lucide-react";
 import { CATEGORIES, EMOJI, TINT } from "../data/categories";
 import { REF_PRICES } from "../data/refPrices";
+import { api } from "../api/client";
+import { ENDPOINTS } from "../api/endpoints";
 import { useI18n } from "../context/I18nContext";
 
 export default function Landing({ onJoin, onLogin }) {
   const { t, tp, tu } = useI18n();
+  const [prices, setPrices] = useState(REF_PRICES);
+
+  useEffect(() => {
+    api.get(ENDPOINTS.prices).then((data) => {
+      const items = Array.isArray(data) ? data : data?.results || [];
+      if (items.length > 0) {
+        setPrices(items.map((p) => ({ name: p.name, unit: p.unit, price: p.price, move: p.week_change ?? 0 })));
+      }
+    }).catch(() => {});
+  }, []);
   return (
     <>
       <section className="hero">
@@ -26,7 +38,7 @@ export default function Landing({ onJoin, onLogin }) {
 
           <div className="board">
             <div className="board-h"><span>{t("landing.board.title")}</span><span>UGX</span></div>
-            {REF_PRICES.slice(0, 5).map(p => (
+            {prices.slice(0, 5).map(p => (
               <div className="board-row" key={p.name}>
                 <div className="n">{tp(p.name)}<small>/{tu(p.unit)}</small></div>
                 <div className="p">

@@ -15,4 +15,5 @@ urlpatterns = [
     path("reports/users/", reports.users_json, name="report-users"),
     path("reports/users.csv", reports.users_csv, name="report-users-csv"),
     path("reports/gmv.csv", reports.gmv_csv, name="report-gmv-csv"),
+    path("reports/delivery/", reports.delivery_stats, name="report-delivery"),
 ]

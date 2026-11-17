@@ -8,6 +8,7 @@ import SellerPlans from "./SellerPlans";
 import SellerOrders from "./SellerOrders";
 import SellerRatings from "./SellerRatings";
 import SellerPayouts from "./SellerPayouts";
+import SellerRecords from "./SellerRecords";
 import ListingForm from "./ListingForm";
 import PlanForm from "./PlanForm";
 export default function SellerApp(props) {
@@ -56,5 +57,5 @@ export default function SellerApp(props) {
     say("Harvest plan posted. Buyers can reserve it now.");
     if (fetchData) fetchData();
   }, [fetchData, say]);
-  return <>{tab === "home" && <SellerHome session={session} mine={mine} myOrders={myOrders} gross={gross} commission={commission} sms={sms} advance={advance} />}{tab === "listings" && <SellerListings mine={mine} setListings={setListings} onCreateListing={() => setCreating(true)} />}{tab === "plans" && <SellerPlans myPlans={myPlans} setPlans={setPlans} pushSms={pushSms} say={say} onCreatePlan={() => setPlanning(true)} />}{tab === "sorders" && <SellerOrders myOrders={myOrders} commission={commission} setOrders={setOrders} advance={advance} />}{tab === "sratings" && <SellerRatings session={session} />}{tab === "payouts" && <SellerPayouts myOrders={myOrders} gross={gross} paidOut={paidOut} commission={commission} />}{creating && <ListingForm onClose={() => setCreating(false)} onSave={handleCreateListing} />}{planning && <PlanForm onClose={() => setPlanning(false)} onSave={handleCreatePlan} />}</>;
+  return <>{tab === "home" && <SellerHome session={session} mine={mine} myOrders={myOrders} gross={gross} commission={commission} sms={sms} advance={advance} />}{tab === "listings" && <SellerListings mine={mine} setListings={setListings} onCreateListing={() => setCreating(true)} />}{tab === "plans" && <SellerPlans myPlans={myPlans} setPlans={setPlans} pushSms={pushSms} say={say} onCreatePlan={() => setPlanning(true)} />}{tab === "sorders" && <SellerOrders myOrders={myOrders} commission={commission} setOrders={setOrders} advance={advance} />}{tab === "sratings" && <SellerRatings session={session} />}{tab === "payouts" && <SellerPayouts myOrders={myOrders} gross={gross} paidOut={paidOut} commission={commission} />}{tab === "records" && <SellerRecords say={say} />}{creating && <ListingForm onClose={() => setCreating(false)} onSave={handleCreateListing} />}{planning && <PlanForm onClose={() => setPlanning(false)} onSave={handleCreatePlan} />}</>;
 }

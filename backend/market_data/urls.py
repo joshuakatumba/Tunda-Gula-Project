@@ -9,4 +9,5 @@ router.register("categories", views.CategoryViewSet, basename="categories")
 
 urlpatterns = [
     path("prices/", views.ReferencePriceListView.as_view(), name="prices"),
+    path("predictions/", views.market_predictions, name="predictions"),
 ] + router.urls

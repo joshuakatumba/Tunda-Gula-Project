@@ -224,7 +224,8 @@ export default function App() {
       { id: "plans", label: t("nav.harvest"), icon: "bx-calendar" },
       { id: "sorders", label: t("nav.orders"), icon: "bx-package" },
       { id: "sratings", label: t("nav.ratings"), icon: "bx-star" },
-      { id: "payouts", label: t("nav.payouts"), icon: "bx-money" }
+      { id: "payouts", label: t("nav.payouts"), icon: "bx-money" },
+      { id: "records", label: t("nav.records"), icon: "bx-book-open" }
     ],
     admin: [
       { id: "overview", label: t("nav.overview"), icon: "bx-pie-chart-alt-2" },
@@ -252,7 +253,8 @@ export default function App() {
       ],
       moreTabs: [
         { id: "sratings", label: t("nav.ratings"), icon: "bx-star" },
-        { id: "payouts", label: t("nav.payouts"), icon: "bx-money" }
+        { id: "payouts", label: t("nav.payouts"), icon: "bx-money" },
+        { id: "records", label: t("nav.records"), icon: "bx-book-open" }
       ]
     },
     admin: {
