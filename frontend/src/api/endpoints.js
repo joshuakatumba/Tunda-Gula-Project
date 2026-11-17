@@ -16,6 +16,9 @@ export const ENDPOINTS = {
   plans: "/listings/plans/",
   plan: (id) => `/listings/plans/${id}/`,
   sellerDashboard: "/listings/seller/dashboard/",
+  sellerAnalytics: "/listings/seller/analytics/",
+  expenses: "/listings/expenses/",
+  expense: (id) => `/listings/expenses/${id}/`,
   // ── Orders ───────────────────────────────────────────────────────
   orders: "/orders/",
   order: (id) => `/orders/${id}/`,
@@ -24,6 +27,8 @@ export const ENDPOINTS = {
   orderDeliver: (id) => `/orders/${id}/deliver/`,
   orderRate: (id) => `/orders/${id}/rate/`,
   preorder: "/orders/preorder/",
+  batchCheckout: "/orders/batch-checkout/",
+  subscriptions: "/orders/subscriptions/",
   ratings: "/orders/ratings/",
   ratingsSummary: "/orders/ratings/summary/",
   // ── Payments ─────────────────────────────────────────────────────
@@ -36,6 +41,7 @@ export const ENDPOINTS = {
   disputeResolve: (id) => `/disputes/${id}/resolve/`,
   // ── Market data ──────────────────────────────────────────────────
   prices: "/market/prices/",
+  predictions: "/market/predictions/",
   categories: "/market/categories/",
   // ── Admin ────────────────────────────────────────────────────────
   adminStats: "/accounts/admin/stats/",
@@ -49,5 +55,6 @@ export const ENDPOINTS = {
   reportUsers: "/payments/reports/users/",
   reportUsersCsv: "/payments/reports/users.csv",
   reportGmvCsv: "/payments/reports/gmv.csv",
+  reportDelivery: "/payments/reports/delivery/",
   category: (id) => `/market/categories/${id}/`
 };

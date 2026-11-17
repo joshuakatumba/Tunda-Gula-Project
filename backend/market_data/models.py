@@ -59,3 +59,19 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class PriceHistory(models.Model):
+    """Historical price snapshots used for trend & seasonal market predictions."""
+
+    crop_name = models.CharField(max_length=100, db_index=True)
+    district = models.CharField(max_length=100, blank=True, default="Kampala")
+    price = models.PositiveIntegerField()
+    recorded_at = models.DateField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "tg_price_history"
+        ordering = ["-recorded_at"]
+
+    def __str__(self):
+        return f"{self.crop_name} ({self.district}) — UGX {self.price:,} @ {self.recorded_at}"

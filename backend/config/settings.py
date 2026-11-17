@@ -251,6 +251,9 @@ MTN_MOMO_API_SECRET = os.environ.get("MTN_MOMO_API_SECRET", "")
 
 # Google OAuth (strictly for customer / buyer accounts)
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+
+# Payment webhook secret
+PAYMENT_WEBHOOK_SECRET = os.environ.get("PAYMENT_WEBHOOK_SECRET", "")
 AIRTEL_MONEY_API_KEY = os.environ.get("AIRTEL_MONEY_API_KEY", "")
 AIRTEL_MONEY_API_SECRET = os.environ.get("AIRTEL_MONEY_API_SECRET", "")
 
@@ -273,16 +276,16 @@ AZURE_ACCOUNT_KEY = os.environ.get("AZURE_ACCOUNT_KEY", "")
 AZURE_CONTAINER = os.environ.get("AZURE_CONTAINER", "tundagula-media")
 
 if AZURE_ACCOUNT_NAME and AZURE_ACCOUNT_KEY:
-    # Production: store all media files in Azure Blob Storage
-    DEFAULT_FILE_STORAGE = "storages.backends.azure_storage.AzureStorage"
+    # Production: store all media files in Azure Blob Storage (Django 5.1+ STORAGES)
     AZURE_CUSTOM_DOMAIN = f"{AZURE_ACCOUNT_NAME}.blob.core.windows.net"
     MEDIA_URL = f"https://{AZURE_CUSTOM_DOMAIN}/{AZURE_CONTAINER}/"
-    # Restrict file upload size: 10 MB for photos, 5 MB for voice notes
+    STORAGES = {
+        "default": {"BACKEND": "storages.backends.azure_storage.AzureStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
     DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
     FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
 else:
-    # Local dev: keep files on disk under /app/media/
-    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
     MEDIA_URL = "media/"
     MEDIA_ROOT = BASE_DIR / "media"
     DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Listing, ListingPhoto, PreHarvestPlan
+from .models import Listing, ListingPhoto, PreHarvestPlan, FarmExpense
 
 
 class ListingPhotoSerializer(serializers.ModelSerializer):
@@ -23,7 +23,7 @@ class ListingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = [
-            "id", "name", "category", "quantity", "unit", "price",
+            "id", "name", "category", "grade", "is_promoted", "quantity", "unit", "price",
             "description", "district", "voice_duration", "voice_file",
             "thumbnail",
             "seller", "seller_name", "seller_verified",
@@ -62,7 +62,7 @@ class ListingCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Listing
         fields = [
-            "name", "category", "quantity", "unit", "price",
+            "name", "category", "grade", "quantity", "unit", "price",
             "description", "voice_duration", "district",
             "voice_file", "photo_files", "thumbnail",
         ]
@@ -118,4 +118,13 @@ class PreHarvestPlanSerializer(serializers.ModelSerializer):
             else:
                 validated_data["district"] = "Wakiso"
         return super().create(validated_data)
+
+
+class FarmExpenseSerializer(serializers.ModelSerializer):
+    """Serializer for farmer expense records."""
+
+    class Meta:
+        model = FarmExpense
+        fields = ["id", "crop_name", "category", "amount", "note", "date", "created_at"]
+        read_only_fields = ["id", "created_at"]
 

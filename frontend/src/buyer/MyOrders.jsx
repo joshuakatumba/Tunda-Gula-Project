@@ -7,13 +7,17 @@ import { DeliveryTrack } from "../components/DeliveryTrack";
 import { Button } from "../components/ui/Button";
 import { FilterChips } from "../components/FilterChips";
 import { Thumb } from "../components/Thumb";
+import { Modal } from "../components/Modal";
+import { Field } from "../components/Field";
 import { EMOJI } from "../data/categories";
 import { useI18n } from "../context/I18nContext";
 
-export default function MyOrders({ orders, onConfirm, onRate }) {
+export default function MyOrders({ orders, onConfirm, onRate, onDispute }) {
   const { t, tp, tu } = useI18n();
   const [filter, setFilter] = useState("All");
   const [busyId, setBusyId] = useState(null);
+  const [disputing, setDisputing] = useState(null);
+  const [disputeReason, setDisputeReason] = useState("");
 
   const filtered = useMemo(() => {
     if (filter === "All") return orders;
@@ -81,7 +85,12 @@ export default function MyOrders({ orders, onConfirm, onRate }) {
                   <div className="row" style={{ marginTop: 10, alignItems: "center" }}>
                     <span style={{ fontSize: 12, color: "var(--color-slate)" }}>{t(`delivery.${o.mode}`) || o.mode}</span>
                     {o.status !== "delivered" && (
-                      <div style={{ marginLeft: "auto" }}>
+                      <div className="row" style={{ marginLeft: "auto", gap: 6 }}>
+                        {onDispute && (
+                          <Button variant="text" size="sm" onClick={() => setDisputing(o)}>
+                            {t("nav.disputes")}
+                          </Button>
+                        )}
                         <Button variant="outline" size="sm" disabled={busyId === o.id} onClick={() => handleConfirm(o)}>
                           {busyId === o.id ? <Loader2 size={14} className="spin" /> : t("buyer.confirm_receipt")}
                         </Button>
@@ -110,6 +119,38 @@ export default function MyOrders({ orders, onConfirm, onRate }) {
           ))
         )}
       </div>
+
+      {disputing && (
+        <Modal
+          title={t("nav.disputes")}
+          onClose={() => { setDisputing(null); setDisputeReason(""); }}
+          footer={
+            <Button
+              variant="primary"
+              block
+              disabled={!disputeReason.trim()}
+              onClick={async () => {
+                await onDispute(disputing, disputeReason.trim());
+                setDisputing(null);
+                setDisputeReason("");
+              }}
+            >
+              {t("common.submit")}
+            </Button>
+          }
+        >
+          <div style={{ fontSize: 13, color: "var(--color-slate)" }}>
+            {disputing.id} · {tp(disputing.item)}
+          </div>
+          <Field label={t("admin.reject_reason")}>
+            <textarea
+              rows={3}
+              value={disputeReason}
+              onChange={(e) => setDisputeReason(e.target.value)}
+            />
+          </Field>
+        </Modal>
+      )}
     </>
   );
 }

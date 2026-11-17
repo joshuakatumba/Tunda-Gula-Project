@@ -76,6 +76,8 @@ class Order(models.Model):
     order_type = models.CharField(max_length=10, choices=OrderType.choices, default="order")
     status = models.CharField(max_length=20, choices=Status.choices, default="placed")
     delivery_mode = models.CharField(max_length=20, choices=DeliveryMode.choices, blank=True, default="")
+    delivery_fee = models.PositiveIntegerField(default=0, help_text="Delivery fee in UGX")
+    batch_ref = models.CharField(max_length=64, blank=True, default="", db_index=True)
     deposit_percentage = models.PositiveSmallIntegerField(default=0, help_text="For pre-orders only")
 
     # --- Timestamps ---
@@ -126,3 +128,36 @@ class Rating(models.Model):
 
     def __str__(self):
         return f"{self.stars}★ on ORD-{self.order_id} by {self.buyer.name}"
+
+
+class SubscriptionOrder(models.Model):
+    """Recurring B2B supply contract (weekly / biweekly / monthly) for restaurants & retailers."""
+
+    class Frequency(models.TextChoices):
+        WEEKLY = "weekly", "Weekly"
+        BIWEEKLY = "biweekly", "Every 2 weeks"
+        MONTHLY = "monthly", "Monthly"
+
+    buyer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="supply_subscriptions",
+    )
+    listing = models.ForeignKey(
+        "listings.Listing",
+        on_delete=models.CASCADE,
+        related_name="subscriptions",
+    )
+    quantity = models.PositiveIntegerField()
+    frequency = models.CharField(max_length=12, choices=Frequency.choices, default=Frequency.WEEKLY)
+    delivery_mode = models.CharField(max_length=20, choices=Order.DeliveryMode.choices, default=Order.DeliveryMode.MOTORCYCLE)
+    is_active = models.BooleanField(default=True)
+    next_run_date = models.DateField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "tg_subscription_orders"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"SUB-{self.pk} · {self.listing.name} ({self.frequency})"

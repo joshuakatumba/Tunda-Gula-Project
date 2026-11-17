@@ -34,26 +34,22 @@ export default function BuyerApp(props) {
   const pay = useCallback(async ({ provider = "MTN", phone, deliveryMode = "Motorcycle" } = {}) => {
     try {
       const buyerPhone = phone || session?.phone || "0772000000";
-      for (const c of cart) {
-        const listingId = String(c.id).replace("L-", "");
-        const res = await api.post(ENDPOINTS.orders, {
-          listing: Number(listingId) || void 0,
-          item_name: c.name,
+      const batchRes = await api.post(ENDPOINTS.batchCheckout, {
+        delivery_mode: deliveryMode,
+        items: cart.map((c) => ({
+          listing: Number(String(c.id).replace("L-", "")),
           quantity: c.qty,
-          unit: c.unit,
-          price_per_unit: c.price,
-          delivery_mode: deliveryMode
+        })),
+      });
+      for (const ord of (batchRes?.orders || [])) {
+        await api.post(ENDPOINTS.initiate, {
+          order: ord.id,
+          provider,
+          phone: buyerPhone,
+          amount: ord.total + (ord.delivery_fee || 0),
         });
-        if (res && res.id) {
-          await api.post(ENDPOINTS.initiate, {
-            order: res.id,
-            provider,
-            phone: buyerPhone,
-            amount: c.qty * c.price
-          });
-        }
       }
-      say(`Paid ${ugx(cartTotal)} with ${provider} Mobile Money \xB7 Order placed!`);
+      say(`Paid ${ugx(batchRes?.total_amount ?? cartTotal)} · ${provider} Mobile Money`);
       setCart([]);
       setCheckout(false);
       setOpen(null);
@@ -65,6 +61,21 @@ export default function BuyerApp(props) {
       throw err;
     }
   }, [cart, session, fetchData, say, cartTotal, onTabChange]);
+  const raiseDispute = useCallback(async (o, reason) => {
+    try {
+      const orderId = Number(String(o.id).replace("ORD-", "").replace("PRE-", ""));
+      await api.post(ENDPOINTS.disputes, {
+        order: orderId,
+        reason,
+        value: o.qty * o.price,
+      });
+      say("Dispute submitted");
+      if (fetchData) await fetchData();
+    } catch (err) {
+      say(formatApiError(err));
+      throw err;
+    }
+  }, [fetchData, say]);
   const placePreorder = useCallback(async (plan, qty, provider) => {
     try {
       const planId = String(plan.id).replace("H-", "");
@@ -142,7 +153,7 @@ export default function BuyerApp(props) {
     cart={cart}
     cartTotal={cartTotal}
     onCheckout={() => setCheckout(true)}
-  />)}{tab === "preorders" && <PreOrders plans={plans} t={t} onPreorder={setPreordering} />}{tab === "myorders" && <MyOrders orders={myOrders} onConfirm={confirmReceipt} onRate={setRating} />}{checkout && <Checkout
+  />)}{tab === "preorders" && <PreOrders plans={plans} t={t} onPreorder={setPreordering} />}{tab === "myorders" && <MyOrders orders={myOrders} onConfirm={confirmReceipt} onRate={setRating} onDispute={raiseDispute} />}{checkout && <Checkout
     cart={cart}
     setCart={setCart}
     commission={commission}

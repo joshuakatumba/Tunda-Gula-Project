@@ -241,5 +241,20 @@
   "admin.export_tx": "Transactions CSV",
   "admin.export_users": "Users CSV",
   "admin.export_gmv": "GMV CSV",
-  "admin.map_title": "Farmer Map"
+  "admin.map_title": "Farmer Map",
+  "nav.records": "Records",
+  "seller.records": "Farm Records",
+  "seller.expenses": "Expenses",
+  "seller.net_profit": "Net Profit",
+  "seller.insights": "Market & Profit Insights",
+  "seller.add_expense": "+ Add expense",
+  "seller.crop": "Crop",
+  "seller.amount": "Amount (UGX)",
+  "seller.exp_seeds": "Seeds",
+  "seller.exp_fertilizer": "Fertilizer",
+  "seller.exp_labor": "Labor",
+  "seller.exp_transport": "Transport",
+  "seller.exp_other": "Other",
+  "seller.no_records": "No expenses logged yet",
+  "seller.export_csv": "Export Statement"
 }

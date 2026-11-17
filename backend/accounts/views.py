@@ -15,6 +15,7 @@ from rest_framework.authtoken.models import Token
 # pyrefly: ignore [missing-import]
 from django.conf import settings as django_settings
 from notifications.sms import send_sms
+from .permissions import IsPlatformAdmin
 
 
 def _token_expires_at(token):
@@ -276,7 +277,7 @@ class PendingVerificationsView(generics.ListAPIView):
     Maps to frontend's AdminVerify.tsx component.
     """
     serializer_class = PendingVerificationSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsPlatformAdmin]
 
     def _wants_verified(self):
         value = self.request.query_params.get("is_verified")
@@ -301,7 +302,7 @@ class PendingVerificationsView(generics.ListAPIView):
 
 
 @api_view(["POST"])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsPlatformAdmin])
 def toggle_active(request, pk):
     """POST /api/v1/accounts/<id>/toggle-active/ — Admin suspends or reactivates an account."""
     try:
@@ -318,7 +319,7 @@ def toggle_active(request, pk):
 
 
 @api_view(["POST"])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsPlatformAdmin])
 def approve_seller(request, pk):
     """POST /api/v1/accounts/<id>/approve/ — Admin approves a seller."""
     # pyrefly: ignore [missing-import]
@@ -338,7 +339,7 @@ def approve_seller(request, pk):
 
 
 @api_view(["POST"])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsPlatformAdmin])
 def reject_seller(request, pk):
     """POST /api/v1/accounts/<id>/reject/ — Admin rejects a seller with reason."""
     reason = request.data.get("reason", "")
@@ -400,7 +401,7 @@ def logout_all(request):
 
 
 @api_view(["GET"])
-@permission_classes([permissions.IsAdminUser])
+@permission_classes([IsPlatformAdmin])
 def admin_platform_stats(request):
     """
     GET /api/v1/accounts/admin/stats/

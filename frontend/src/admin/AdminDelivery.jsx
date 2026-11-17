@@ -4,38 +4,80 @@ import { Stat } from "../components/Stat";
 const FarmMap = React.lazy(() => import("../components/FarmMap"));
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
+import { ugx } from "../utils/helpers";
+import { useI18n } from "../context/I18nContext";
+
 export default function AdminDelivery() {
+  const { t } = useI18n();
   const [pins, setPins] = useState([]);
+  const [stats, setStats] = useState(null);
   const [mapError, setMapError] = useState(false);
+
   useEffect(() => {
-    api.get(`${ENDPOINTS.pending}?role=seller&is_verified=true`).then((data) => {
-      const items = Array.isArray(data) ? data : data.results || [];
-      const withGps = items.filter((s) => s.gps_lat && s.gps_lng).map((s) => ({
-        id: s.id,
-        name: s.name,
-        district: s.district || "",
-        lat: parseFloat(s.gps_lat),
-        lng: parseFloat(s.gps_lng),
-        is_verified: s.is_verified
-      }));
-      setPins(withGps);
-    }).catch(() => setMapError(true));
+    api.get(`${ENDPOINTS.pending}?role=seller&is_verified=true`)
+      .then((data) => {
+        const items = Array.isArray(data) ? data : data.results || [];
+        setPins(
+          items
+            .filter((s) => s.gps_lat && s.gps_lng)
+            .map((s) => ({
+              id: s.id,
+              name: s.name,
+              district: s.district || "",
+              lat: parseFloat(s.gps_lat),
+              lng: parseFloat(s.gps_lng),
+              is_verified: s.is_verified,
+            }))
+        );
+      })
+      .catch(() => setMapError(true));
+
+    api.get(ENDPOINTS.reportDelivery).then(setStats).catch(() => {});
   }, []);
-  return <><Head title="Delivery Operations" /><div className="grid g4"><Stat label="Average Transit Time" value="6.4 h" sub="Target: < 8 h" /><Stat label="Completion Rate" value="94%" sub="111 of 118 fulfilled" /><Stat label="Active Disputes" value="2" sub="1.7% incident rate" /><Stat label="SMS Delivery Rate" value="97.2%" sub="Carrier delivery" /></div><div className="card" style={{ marginTop: "20px" }}><h2 style={{ margin: "0 0 16px", fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)" }}>
-          Farmer Geographic Distribution
-        </h2>{mapError ? <div style={{ padding: "24px", textAlign: "center", color: "var(--color-slate)", background: "var(--color-fog)", borderRadius: "var(--radius-cards)" }}>
-            Map coordinates currently unavailable.
-          </div> : <Suspense fallback={<div className="skeleton" style={{ height: 380, width: "100%", borderRadius: 8 }} />}><FarmMap pins={pins} height={380} /></Suspense>}</div><div className="card" style={{ marginTop: "20px" }}><table className="tbl"><thead><tr><th>District</th><th>Orders</th><th>Avg Time</th><th>Primary Transport</th><th>Late Rate</th></tr></thead><tbody>{[
-    ["Wakiso", 48, "4.1 h", "Motorcycle", "6%"],
-    ["Mukono", 27, "6.8 h", "Motor truck", "11%"],
-    ["Luweero", 22, "9.2 h", "Motor truck", "19%"],
-    ["Mpigi", 14, "5.5 h", "Motorcycle", "7%"],
-    ["Buikwe", 7, "11.4 h", "Bicycle", "28%"]
-  ].map((r) => <tr key={r[0]}><td><strong>{r[0]}</strong></td><td style={{ fontFamily: "var(--font-monospace)" }}>{r[1]}</td><td style={{ fontFamily: "var(--font-monospace)" }}>{r[2]}</td><td>{r[3]}</td><td
-    style={{
-      fontFamily: "var(--font-monospace)",
-      fontWeight: 600,
-      color: parseInt(String(r[4])) > 15 ? "var(--color-alarm-red)" : "var(--color-forest-ink)"
-    }}
-  >{r[4]}</td></tr>)}</tbody></table></div></>;
+
+  return (
+    <>
+      <Head title={t("admin.delivery")} />
+      <div className="grid g4">
+        <Stat label={t("admin.total_orders")} value={stats?.total_orders ?? 0} />
+        <Stat label={t("common.delivered")} value={stats?.delivered_orders ?? 0} />
+        <Stat label="Completion" value={`${stats?.completion_rate ?? 0}%`} />
+        <Stat label={t("admin.disputes")} value={stats?.open_disputes ?? 0} />
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 700 }}>{t("admin.map_title")}</h2>
+        {mapError ? (
+          <div style={{ padding: 20, textAlign: "center", color: "var(--color-slate)" }}>Map unavailable</div>
+        ) : (
+          <Suspense fallback={<div className="skeleton" style={{ height: 340, width: "100%", borderRadius: 8 }} />}>
+            <FarmMap pins={pins} height={340} />
+          </Suspense>
+        )}
+      </div>
+
+      {stats?.districts?.length > 0 && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>{t("buyer.district")}</th>
+                <th>{t("seller.orders")}</th>
+                <th>{t("buyer.delivery")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.districts.map((r) => (
+                <tr key={r.district}>
+                  <td><strong>{r.district}</strong></td>
+                  <td style={{ fontFamily: "var(--font-monospace)" }}>{r.orders}</td>
+                  <td style={{ fontFamily: "var(--font-monospace)" }}>{ugx(r.delivery_fees)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
 }

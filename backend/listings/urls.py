@@ -6,9 +6,11 @@ app_name = "listings"
 
 router = DefaultRouter()
 router.register(r"plans", views.PreHarvestPlanViewSet, basename="plan")
+router.register(r"expenses", views.FarmExpenseViewSet, basename="expense")
 router.register(r"", views.ListingViewSet, basename="listing")
 
 urlpatterns = [
     path("seller/dashboard/", views.seller_dashboard, name="seller-dashboard"),
+    path("seller/analytics/", views.seller_analytics, name="seller-analytics"),
     path("", include(router.urls)),
 ]

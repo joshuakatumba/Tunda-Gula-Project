@@ -3,11 +3,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.db.models import Sum, Avg, Count
 from django.utils import timezone
-from .models import Listing, PreHarvestPlan
+from .models import Listing, PreHarvestPlan, FarmExpense
 from .serializers import (
     ListingSerializer,
     ListingCreateSerializer,
     PreHarvestPlanSerializer,
+    FarmExpenseSerializer,
 )
 
 
@@ -69,6 +70,7 @@ class ListingViewSet(viewsets.ModelViewSet):
         # Marketplace filters — matches Marketplace.tsx filter logic
         category = self.request.query_params.get("category")
         district = self.request.query_params.get("district")
+        grade = self.request.query_params.get("grade")
         max_price = self.request.query_params.get("max_price")
         search = self.request.query_params.get("q")
         sort = self.request.query_params.get("sort")
@@ -77,8 +79,13 @@ class ListingViewSet(viewsets.ModelViewSet):
             qs = qs.filter(category=category)
         if district and district != "All":
             qs = qs.filter(district=district)
+        if grade and grade != "All":
+            qs = qs.filter(grade=grade)
         if max_price:
-            qs = qs.filter(price__lte=int(max_price))
+            try:
+                qs = qs.filter(price__lte=int(max_price))
+            except (TypeError, ValueError):
+                pass
         if search:
             qs = qs.filter(name__icontains=search)
 
@@ -86,6 +93,8 @@ class ListingViewSet(viewsets.ModelViewSet):
             qs = qs.order_by("price")
         elif sort == "newest":
             qs = qs.order_by("-created_at")
+        else:
+            qs = qs.order_by("-is_promoted", "-created_at")
 
         return qs
 
@@ -127,7 +136,7 @@ class PreHarvestPlanViewSet(viewsets.ModelViewSet):
         return PreHarvestPlan.objects.filter(is_active=True).select_related("seller")
 
     def perform_create(self, serializer):
-        serializer.save(seller=self.request.user, district=self.request.user.district)
+        serializer.save(seller=self.request.user)
 
 
 @api_view(["GET"])
@@ -184,4 +193,108 @@ def seller_dashboard(request):
         "is_verified": seller.is_verified,
         "district": seller.district,
         "seller_type": seller.seller_type,
+    })
+
+
+class FarmExpenseViewSet(viewsets.ModelViewSet):
+    """
+    /api/v1/listings/expenses/
+    Seller farm expense log for profit/loss and credit-ready records.
+    """
+    serializer_class = FarmExpenseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if getattr(self.request.user, "role", None) != "seller":
+            return FarmExpense.objects.none()
+        return FarmExpense.objects.filter(seller=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(seller=self.request.user)
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def seller_analytics(request):
+    """
+    GET /api/v1/listings/seller/analytics/
+    Computes realistic profit/loss, per-crop margins, and price-vs-market insights.
+    """
+    if request.user.role != "seller":
+        return Response({"error": "Seller account required"}, status=403)
+
+    from django.db.models import F
+    from orders.models import Order
+    from market_data.models import ReferencePrice
+
+    seller = request.user
+    delivered = Order.objects.filter(seller=seller, status=Order.Status.DELIVERED)
+    total_revenue = delivered.aggregate(total=Sum(F("quantity") * F("price_per_unit")))["total"] or 0
+
+    expenses = FarmExpense.objects.filter(seller=seller)
+    total_expenses = expenses.aggregate(total=Sum("amount"))["total"] or 0
+    net_profit = total_revenue - total_expenses
+    margin_pct = round((net_profit / total_revenue) * 100, 1) if total_revenue > 0 else 0
+
+    # Per-crop breakdown
+    crop_map = {}
+    for row in delivered.values("item_name").annotate(rev=Sum(F("quantity") * F("price_per_unit"))):
+        name = row["item_name"]
+        crop_map.setdefault(name, {"crop": name, "revenue": 0, "expenses": 0})
+        crop_map[name]["revenue"] += row["rev"] or 0
+
+    for exp in expenses.values("crop_name").annotate(cost=Sum("amount")):
+        name = exp["crop_name"]
+        crop_map.setdefault(name, {"crop": name, "revenue": 0, "expenses": 0})
+        crop_map[name]["expenses"] += exp["cost"] or 0
+
+    crops = []
+    for item in crop_map.values():
+        profit = item["revenue"] - item["expenses"]
+        crops.append({**item, "profit": profit})
+    crops.sort(key=lambda c: c["profit"], reverse=True)
+
+    # Actionable insights (grounded in seller's own listings & market reference prices)
+    insights = []
+    ref_prices = {r.name.lower(): r for r in ReferencePrice.objects.all()}
+    for listing in Listing.objects.filter(seller=seller, is_active=True)[:10]:
+        ref = ref_prices.get(listing.name.lower())
+        if ref and ref.price > 0:
+            diff_pct = round(((listing.price - ref.price) / ref.price) * 100)
+            if diff_pct <= -10:
+                insights.append({
+                    "type": "price_up",
+                    "crop": listing.name,
+                    "text": f"{listing.name}: your price ({listing.price:,}) is {abs(diff_pct)}% below market ({ref.price:,}).",
+                })
+            elif diff_pct >= 15:
+                insights.append({
+                    "type": "price_high",
+                    "crop": listing.name,
+                    "text": f"{listing.name}: priced {diff_pct}% above market ({ref.price:,}) — may sell slower.",
+                })
+
+    if crops:
+        best = crops[0]
+        if best["profit"] > 0:
+            insights.append({
+                "type": "top_crop",
+                "crop": best["crop"],
+                "text": f"Top earner: {best['crop']} (+UGX {best['profit']:,} net).",
+            })
+        worst = crops[-1]
+        if worst["profit"] < 0:
+            insights.append({
+                "type": "loss_crop",
+                "crop": worst["crop"],
+                "text": f"{worst['crop']} is currently at -UGX {abs(worst['profit']):,} net.",
+            })
+
+    return Response({
+        "total_revenue": total_revenue,
+        "total_expenses": total_expenses,
+        "net_profit": net_profit,
+        "margin_pct": margin_pct,
+        "crops": crops,
+        "insights": insights[:4],
     })

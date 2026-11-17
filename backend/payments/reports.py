@@ -19,6 +19,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 
 from accounts.models import User
+from accounts.permissions import IsPlatformAdmin
 from .models import Payment, Payout
 
 
@@ -187,3 +188,36 @@ def gmv_csv(request):
         writer.writerow([day, (pay.get(day) or {}).get("n") or 0, gmv, fee, net])
     writer.writerow(["TOTAL", "", total_gmv, total_fee, total_net])
     return response
+
+
+@api_view(["GET"])
+@permission_classes([IsPlatformAdmin])
+def delivery_stats(request):
+    """Real-time delivery & fulfillment KPIs per district for AdminDelivery."""
+    from orders.models import Order
+    from disputes.models import Dispute
+
+    total = Order.objects.count()
+    delivered = Order.objects.filter(status=Order.Status.DELIVERED).count()
+    open_disputes = Dispute.objects.filter(status="open").count()
+    completion_rate = round((delivered / total) * 100) if total else 0
+
+    districts = []
+    for row in (
+        Order.objects.values("seller__district")
+        .annotate(orders=Count("id"), delivery_fees=Sum("delivery_fee"))
+        .order_by("-orders")[:10]
+    ):
+        districts.append({
+            "district": row["seller__district"] or "Kampala",
+            "orders": row["orders"],
+            "delivery_fees": row["delivery_fees"] or 0,
+        })
+
+    return Response({
+        "total_orders": total,
+        "delivered_orders": delivered,
+        "completion_rate": completion_rate,
+        "open_disputes": open_disputes,
+        "districts": districts,
+    })
