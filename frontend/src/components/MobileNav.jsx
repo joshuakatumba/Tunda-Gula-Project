@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, User, Check, LogOut, LogIn } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../context/I18nContext";
@@ -26,8 +27,8 @@ export const MobileNav = ({
     onClick={() => setOpen(true)}
     aria-label="Profile"
     title="Profile"
-  ><User size={20} /></button>{open && <div className="drawer-overlay" onClick={() => setOpen(false)}><div className="drawer" onClick={(e) => e.stopPropagation()}><div className="drawer-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px", borderBottom: "1px solid var(--color-fog)" }}><h2 style={{ fontSize: "18px", fontWeight: 700, margin: 0, color: "var(--color-obsidian)" }}>
-                Profile
+  ><User size={20} /></button>{open && createPortal(<div className="drawer-overlay" onClick={() => setOpen(false)}><div className="drawer" onClick={(e) => e.stopPropagation()}><div className="drawer-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px", borderBottom: "1px solid var(--color-fog)" }}><h2 style={{ fontSize: "18px", fontWeight: 700, margin: 0, color: "var(--color-obsidian)" }}>
+                {t("nav.profile")}
               </h2><button
     onClick={() => setOpen(false)}
     aria-label="Close"
@@ -153,5 +154,5 @@ export const MobileNav = ({
       setOpen(false);
     }}
   ><LogOut size={16} style={{ marginRight: "6px" }} /> {t("nav.logout")}
-                  </Button></>}</div></div></div>}</>;
+                  </Button></>}</div></div></div>, document.body)}</>;
 };

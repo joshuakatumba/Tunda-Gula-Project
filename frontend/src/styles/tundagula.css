@@ -1122,11 +1122,13 @@ input::placeholder, textarea::placeholder {
 }
 
 .drawer-content {
-  padding: 20px;
+  padding: 20px 20px calc(28px + env(safe-area-inset-bottom, 0px));
   display: flex !important;
   flex-direction: column !important;
   gap: 16px !important;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
   flex: 1;
 }
 
