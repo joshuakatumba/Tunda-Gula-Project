@@ -51,10 +51,11 @@ class Command(BaseCommand):
                 "otp_verified": True,
             },
         )
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Created farmer account: {farmer_phone} ({farmer_user.name})"))
-        else:
-            self.stdout.write(f"Farmer account already exists: {farmer_phone}")
+        farmer_user.email = "seller@tundagula.ug"
+        farmer_user.set_password("seller123")
+        farmer_user.otp_verified = True
+        farmer_user.save()
+        self.stdout.write(self.style.SUCCESS(f"Configured farmer account: seller@tundagula.ug / {farmer_phone} (pass: seller123)"))
 
         # 3. Buyer Account
         buyer_phone = "+256782000002"

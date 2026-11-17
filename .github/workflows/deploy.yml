@@ -48,7 +48,7 @@ jobs:
           key: ${{ secrets.AWS_SSH_KEY || secrets.AZURE_SSH_KEY }}
           script: |
             set -e
-            echo " Deploying latest code on AWS EC2..."
+            echo "Deploying latest code on AWS EC2..."
             cd ~/Tunda-Gula-Project
 
             # Pull latest changes from main branch

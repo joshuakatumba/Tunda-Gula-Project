@@ -107,6 +107,71 @@ def login_view(request):
     }, status=status.HTTP_200_OK)
 
 
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def google_auth_view(request):
+    """
+    POST /api/v1/accounts/google/
+    Google OAuth Sign-In — strictly for customers (role='buyer').
+    Verifies the Google ID token and creates or authenticates a buyer account.
+    """
+    import json
+    import urllib.request
+    import urllib.parse
+
+    credential = request.data.get("credential")
+    if not credential:
+        return Response({"error": "Google credential is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        url = f"https://oauth2.googleapis.com/tokeninfo?id_token={urllib.parse.quote(str(credential))}"
+        with urllib.request.urlopen(url, timeout=8) as resp:
+            info = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return Response({"error": "Invalid or expired Google token."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    google_client_id = getattr(django_settings, "GOOGLE_CLIENT_ID", "")
+    if google_client_id and info.get("aud") != google_client_id:
+        return Response({"error": "Google token audience mismatch."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    email = (info.get("email") or "").strip().lower()
+    email_verified = str(info.get("email_verified", "")).lower() == "true"
+    if not email or not email_verified:
+        return Response({"error": "Verified Google email is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.filter(email__iexact=email).first()
+    if user:
+        if user.role != User.Role.BUYER:
+            return Response(
+                {"error": "Google Sign-In is strictly for customer accounts."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if not user.is_active:
+            return Response({"error": "Account is disabled. Please contact support."}, status=status.HTTP_403_FORBIDDEN)
+    else:
+        name = (info.get("name") or email.split("@")[0])[:200]
+        buyer_type = request.data.get("buyer_type") or User.BuyerType.HOUSEHOLD
+        if buyer_type not in [c[0] for c in User.BuyerType.choices]:
+            buyer_type = User.BuyerType.HOUSEHOLD
+        user = User.objects.create_user(
+            email=email,
+            name=name,
+            role=User.Role.BUYER,
+            buyer_type=buyer_type,
+            district=request.data.get("district", "Kampala")[:100],
+            otp_verified=True,
+        )
+
+    token = _get_fresh_token(user)
+    profile = UserProfileSerializer(user).data
+    return Response({
+        "message": "Google sign-in successful",
+        "token": token.key,
+        "user": profile,
+        "expires_at": _token_expires_at(token),
+    }, status=status.HTTP_200_OK)
+
+
 from . import otp_service
 
 

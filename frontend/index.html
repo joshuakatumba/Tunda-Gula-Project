@@ -4,12 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" />
     <meta name="description" content="TundaGula — Uganda's farm-to-table marketplace. Buy fresh produce directly from verified farmers at fair prices." />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <title>TundaGula — From Farm, to You</title>
     <!-- Preconnect to external origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
     <link rel="preconnect" href="https://unpkg.com" crossorigin />
     <!-- Defer Boxicons CSS — non-critical stylesheet loaded after paint -->
     <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" media="print" onload="this.media='all'" />
+    <!-- Google Identity Services (customer Google Sign-In) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!-- Prevent dark mode flash -->
     <script>
       (function(){var t=localStorage.getItem('tg-theme');if(t)document.documentElement.setAttribute('data-theme',t)})();
@@ -17,6 +23,6 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

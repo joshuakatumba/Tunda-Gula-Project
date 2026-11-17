@@ -372,7 +372,7 @@ input::placeholder, textarea::placeholder {
   color: var(--text-on-dark);
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 60;
 }
 
 .topbar-in {
@@ -1017,9 +1017,19 @@ input::placeholder, textarea::placeholder {
 .spin { animation: spin 0.8s linear infinite; }
 
 /* Skeleton loading */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
 .skeleton {
-  background: var(--color-fog);
+  background: linear-gradient(90deg, var(--color-fog) 25%, rgba(255, 255, 255, 0.55) 50%, var(--color-fog) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
   border-radius: var(--radius-cards);
+}
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(90deg, var(--color-fog) 25%, rgba(255, 255, 255, 0.08) 50%, var(--color-fog) 75%);
+  background-size: 200% 100%;
 }
 
 /* ── Responsive ── */
@@ -1112,11 +1122,13 @@ input::placeholder, textarea::placeholder {
 }
 
 .drawer-content {
-  padding: 20px;
+  padding: 20px 20px calc(28px + env(safe-area-inset-bottom, 0px));
   display: flex !important;
   flex-direction: column !important;
   gap: 16px !important;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  min-height: 0;
   flex: 1;
 }
 
@@ -1341,19 +1353,31 @@ input::placeholder, textarea::placeholder {
 
 /* ── Header: uniform control sizing & spacing ── */
 .topbar-in {
-  min-height: 72px;
-  padding: 12px 24px;
-  gap: 24px;
+  min-height: 64px;
+  padding: 10px 24px;
+  gap: 16px;
   flex-wrap: nowrap;
 }
-.topbar-nav { align-items: center; gap: 28px; margin-left: 32px; }
+.brand-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.topbar-nav { align-items: center; gap: 24px; margin-left: 24px; }
 .topbar-nav a { font-size: 14px; font-weight: 500; color: var(--color-fog); white-space: nowrap; }
-.topbar-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 
 /* every header control shares one height */
 .tb-ctl {
-  height: 40px;
-  min-height: 40px;
+  height: 38px;
+  min-height: 38px;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
@@ -1364,20 +1388,21 @@ input::placeholder, textarea::placeholder {
   line-height: 1;
   cursor: pointer;
 }
-.tb-icon { width: 40px; padding: 0; background: transparent; border: 1px solid transparent; color: var(--color-fog); }
+.tb-icon { width: 38px; padding: 0; background: transparent; border: 1px solid transparent; color: var(--color-fog); }
 .tb-icon:hover { background: rgba(255, 255, 255, 0.08); }
-.tb-lang { min-width: 40px; padding: 0 12px; border: 1px solid var(--color-slate); background: transparent; color: var(--color-fog); }
+.tb-lang { min-width: 38px; padding: 0 10px; border: 1px solid rgba(255, 255, 255, 0.25); background: transparent; color: var(--color-fog); }
 .tb-lang.on { background: var(--color-paper); border-color: var(--color-paper); color: var(--color-obsidian); font-weight: 700; }
 .tb-langs { gap: 6px; }
 .tb-user { text-align: right; line-height: 1.25; padding: 0 4px; }
 .tb-user b { display: block; font-size: 14px; color: var(--color-paper); white-space: nowrap; }
 .tb-user span { font-size: 12px; color: var(--color-pebble); }
-.tb-divider { width: 1px; height: 28px; background: rgba(255, 255, 255, 0.16); }
+.tb-divider { width: 1px; height: 24px; background: rgba(255, 255, 255, 0.16); }
 .topbar-actions .btn-header {
-  height: 40px; min-height: 40px !important; padding: 0 20px !important; font-size: 14px !important;
+  height: 38px; min-height: 38px !important; padding: 0 16px !important; font-size: 13px !important;
 }
 @media (max-width: 767px) {
-  .topbar-in { min-height: 60px; padding: 10px 16px; gap: 12px; }
+  .topbar-in { min-height: 56px; padding: 8px 14px; gap: 8px; }
+  .brand { font-size: 20px; }
 }
 @media (min-width: 768px) {
   /* .desktop-only forces display:block — restore flex for header groups */
