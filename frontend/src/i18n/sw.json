@@ -256,5 +256,16 @@
   "seller.exp_transport": "Usafiri",
   "seller.exp_other": "Nyingine",
   "seller.no_records": "Hakuna gharama bado",
-  "seller.export_csv": "Pakua Taarifa"
+  "seller.export_csv": "Pakua Taarifa",
+  "seller.market_pulse": "Hali ya Soko Leo",
+  "seller.recurring_buyers": "Wanunuzi wa Kila Wiki",
+  "seller.credit_score": "Alama ya Mkopo wa Shamba",
+  "seller.available_credit": "Mkopo wa pembejeo unaopatikana",
+  "seller.request_credit": "Omba pembejeo kwa mkopo",
+  "seller.credit_approved": "Mkopo wa pembejeo umeidhinishwa",
+  "seller.crop_profit": "Faida kwa Kila Zao",
+  "seller.draw_advance": "Chukua malipo ya awali",
+  "seller.sell_again": "Uza tena",
+  "buyer.weekly_supply": "Agiza kila wiki (B2B)",
+  "buyer.subscribed": "Mkataba wa kila wiki umewashwa"
 }

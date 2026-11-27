@@ -330,12 +330,15 @@ def batch_checkout(request):
 
 
 class SubscriptionOrderViewSet(viewsets.ModelViewSet):
-    """B2B recurring weekly/monthly supply contracts."""
+    """B2B recurring weekly/monthly supply contracts — visible to both buyer and matched seller."""
     serializer_class = SubscriptionOrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return SubscriptionOrder.objects.filter(buyer=self.request.user).select_related("listing")
+        user = self.request.user
+        if user.role == "seller":
+            return SubscriptionOrder.objects.filter(listing__seller=user, is_active=True).select_related("listing", "buyer")
+        return SubscriptionOrder.objects.filter(buyer=user).select_related("listing", "buyer")
 
     def perform_create(self, serializer):
         serializer.save(buyer=self.request.user)

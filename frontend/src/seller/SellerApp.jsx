@@ -15,6 +15,7 @@ export default function SellerApp(props) {
   const { tab, listings, setListings, plans, setPlans, orders, setOrders, commission, say, pushSms, sms, session, fetchData } = props;
   const ME = `S-${session?.id || "01"}`;
   const [creating, setCreating] = useState(false);
+  const [relistDraft, setRelistDraft] = useState(null);
   const [planning, setPlanning] = useState(false);
   const mine = useMemo(() => listings.filter((l) => l.sellerId === ME || String(l.sellerId) === `S-${session?.id}` || l.seller === session?.name), [listings, ME, session]);
   const myPlans = useMemo(() => plans.filter((p) => p.sellerId === ME || String(p.sellerId) === `S-${session?.id}` || p.seller === session?.name), [plans, ME, session]);
@@ -57,5 +58,5 @@ export default function SellerApp(props) {
     say("Harvest plan posted. Buyers can reserve it now.");
     if (fetchData) fetchData();
   }, [fetchData, say]);
-  return <>{tab === "home" && <SellerHome session={session} mine={mine} myOrders={myOrders} gross={gross} commission={commission} sms={sms} advance={advance} />}{tab === "listings" && <SellerListings mine={mine} setListings={setListings} onCreateListing={() => setCreating(true)} />}{tab === "plans" && <SellerPlans myPlans={myPlans} setPlans={setPlans} pushSms={pushSms} say={say} onCreatePlan={() => setPlanning(true)} />}{tab === "sorders" && <SellerOrders myOrders={myOrders} commission={commission} setOrders={setOrders} advance={advance} />}{tab === "sratings" && <SellerRatings session={session} />}{tab === "payouts" && <SellerPayouts myOrders={myOrders} gross={gross} paidOut={paidOut} commission={commission} />}{tab === "records" && <SellerRecords say={say} />}{creating && <ListingForm onClose={() => setCreating(false)} onSave={handleCreateListing} />}{planning && <PlanForm onClose={() => setPlanning(false)} onSave={handleCreatePlan} />}</>;
+  return <>{tab === "home" && <SellerHome session={session} mine={mine} myOrders={myOrders} gross={gross} commission={commission} sms={sms} advance={advance} />}{tab === "listings" && <SellerListings mine={mine} setListings={setListings} onCreateListing={() => { setRelistDraft(null); setCreating(true); }} onRelist={(l) => { setRelistDraft(l); setCreating(true); }} />}{tab === "plans" && <SellerPlans myPlans={myPlans} setPlans={setPlans} pushSms={pushSms} say={say} onCreatePlan={() => setPlanning(true)} />}{tab === "sorders" && <SellerOrders myOrders={myOrders} commission={commission} setOrders={setOrders} advance={advance} />}{tab === "sratings" && <SellerRatings session={session} />}{tab === "payouts" && <SellerPayouts myOrders={myOrders} gross={gross} paidOut={paidOut} commission={commission} />}{tab === "records" && <SellerRecords say={say} session={session} />}{creating && <ListingForm initial={relistDraft} onClose={() => { setCreating(false); setRelistDraft(null); }} onSave={handleCreateListing} />}{planning && <PlanForm onClose={() => setPlanning(false)} onSave={handleCreatePlan} />}</>;
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { TrendingUp, Repeat } from "lucide-react";
 import { ugx } from "../utils/helpers";
 import { Head } from "../components/Head";
 import { Badge } from "../components/Badge";
@@ -10,8 +11,13 @@ import { useI18n } from "../context/I18nContext";
 export default function SellerHome({ session, mine, myOrders, gross, advance }) {
   const { t, tp, tu } = useI18n();
   const [stats, setStats] = useState(null);
+  const [pulse, setPulse] = useState([]);
+  const [contracts, setContracts] = useState([]);
+
   useEffect(() => {
     api.get(ENDPOINTS.sellerDashboard).then(setStats).catch(() => {});
+    api.get(ENDPOINTS.predictions).then((d) => setPulse(Array.isArray(d) ? d.slice(0, 3) : [])).catch(() => {});
+    api.get(ENDPOINTS.subscriptions).then((d) => setContracts(Array.isArray(d) ? d : d?.results || [])).catch(() => {});
   }, [session?.id]);
 
   const activeCount = stats?.active_listings ?? mine.filter((l) => l.qty > 0).length;
@@ -24,11 +30,35 @@ export default function SellerHome({ session, mine, myOrders, gross, advance }) 
   return (
     <>
       <Head title={t("seller.overview")} />
-      <div className="row" style={{ marginBottom: 16 }}>
+      <div className="row" style={{ marginBottom: 14, gap: 8 }}>
         <Badge tone={(stats?.is_verified ?? session?.is_verified) ? "b-green" : "default"}>
           {(stats?.is_verified ?? session?.is_verified) ? t("seller.verified") : t("seller.pending_verify")}
         </Badge>
+        {contracts.length > 0 && (
+          <Badge tone="b-maize">
+            <Repeat size={11} style={{ marginRight: 4 }} /> {contracts.length} {t("seller.recurring_buyers")}
+          </Badge>
+        )}
       </div>
+
+      {pulse.length > 0 && (
+        <div className="card" style={{ marginBottom: 14, padding: 12, background: "var(--color-linen-mist)" }}>
+          <div className="row" style={{ gap: 6, marginBottom: 8, alignItems: "center" }}>
+            <TrendingUp size={15} color="var(--color-forest-ink)" />
+            <strong style={{ fontSize: 13, color: "var(--color-forest-ink)" }}>{t("seller.market_pulse")}</strong>
+          </div>
+          <div className="row" style={{ gap: 12, flexWrap: "wrap" }}>
+            {pulse.map((p) => (
+              <div key={p.crop} style={{ fontSize: 12 }}>
+                <strong>{tp(p.crop)}</strong>: {ugx(p.current_price)}/{tu(p.unit)}{" "}
+                <span style={{ fontWeight: 700, color: p.signal === "rise" ? "var(--color-forest-ink)" : p.signal === "dip" ? "var(--color-alarm-red)" : "var(--color-slate)" }}>
+                  {p.signal === "rise" ? "▲" : p.signal === "dip" ? "▼" : "–"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
         <Stat label={t("seller.listings")} value={activeCount} />
@@ -37,7 +67,21 @@ export default function SellerHome({ session, mine, myOrders, gross, advance }) 
         <Stat label={t("seller.rating")} value={avgRating} />
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
+      {contracts.length > 0 && (
+        <div className="card" style={{ marginTop: 14, padding: 14 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, margin: "0 0 10px" }}>{t("seller.recurring_buyers")}</h2>
+          <div className="stack" style={{ gap: 8 }}>
+            {contracts.map((c) => (
+              <div key={c.id} className="between" style={{ fontSize: 13 }}>
+                <span><strong>{c.buyer_name}</strong> · {c.quantity} {tu(c.unit)} {tp(c.listing_name)}</span>
+                <Badge tone="b-green">{c.frequency}</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="card" style={{ marginTop: 14 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 12px", color: "var(--color-obsidian)" }}>
           {t("seller.pending_orders")}
         </h2>

@@ -256,5 +256,16 @@
   "seller.exp_transport": "Entambula",
   "seller.exp_other": "Ebirala",
   "seller.no_records": "Tewali nsasaanya ewandiikiddwa",
-  "seller.export_csv": "Funa Alipoota"
+  "seller.export_csv": "Funa Alipoota",
+  "seller.market_pulse": "Emiwendo gy'Akatale Leero",
+  "seller.recurring_buyers": "Abaguzi ba Buli Wiiki",
+  "seller.credit_score": "Obubonero bw'Ebbanja",
+  "seller.available_credit": "Ebbanja ly'ebikozesebwa eririwo",
+  "seller.request_credit": "Saba ensigo ku bbanja",
+  "seller.credit_approved": "Ebbanja likkiriziddwa",
+  "seller.crop_profit": "Amagoba ku Buli Kirime",
+  "seller.draw_advance": "Funa ssente ez'okukoola",
+  "seller.sell_again": "Tunda nate",
+  "buyer.weekly_supply": "Gula buli wiiki",
+  "buyer.subscribed": "Endagaano ya buli wiiki ekakasiddwa"
 }

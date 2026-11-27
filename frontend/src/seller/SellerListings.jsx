@@ -8,7 +8,7 @@ import { ENDPOINTS } from "../api/endpoints";
 import { Thumb } from "../components/Thumb";
 import { useI18n } from "../context/I18nContext";
 
-export default function SellerListings({ mine, setListings, onCreateListing }) {
+export default function SellerListings({ mine, setListings, onCreateListing, onRelist }) {
   const { t, tp, tu } = useI18n();
 
   const handleDelete = async (id) => {
@@ -61,13 +61,24 @@ export default function SellerListings({ mine, setListings, onCreateListing }) {
                     onChange={(e) => setListings((ls) => ls.map((x) => x.id === l.id ? { ...x, qty: Math.max(0, Number(e.target.value) || 0) } : x))}
                     onBlur={(e) => handleUpdateQuantity(l.id, Number(e.target.value) || 0)}
                   />
-                  <button
-                    style={{ background: "none", border: "none", color: "var(--color-alarm-red)", cursor: "pointer", padding: 4 }}
-                    onClick={() => handleDelete(l.id)}
-                    title={t("common.delete")}
-                  >
-                    <i className="bx bx-trash" style={{ fontSize: 17 }} />
-                  </button>
+                  <div className="row" style={{ gap: 2 }}>
+                    {onRelist && (
+                      <button
+                        style={{ background: "none", border: "none", color: "var(--color-forest-ink)", cursor: "pointer", padding: 4 }}
+                        onClick={() => onRelist(l)}
+                        title={t("seller.sell_again")}
+                      >
+                        <i className="bx bx-refresh" style={{ fontSize: 19 }} />
+                      </button>
+                    )}
+                    <button
+                      style={{ background: "none", border: "none", color: "var(--color-alarm-red)", cursor: "pointer", padding: 4 }}
+                      onClick={() => handleDelete(l.id)}
+                      title={t("common.delete")}
+                    >
+                      <i className="bx bx-trash" style={{ fontSize: 17 }} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

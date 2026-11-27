@@ -256,5 +256,16 @@
   "seller.exp_transport": "Transport",
   "seller.exp_other": "Other",
   "seller.no_records": "No expenses logged yet",
-  "seller.export_csv": "Export Statement"
+  "seller.export_csv": "Export Statement",
+  "seller.market_pulse": "Today's Market Pulse",
+  "seller.recurring_buyers": "Weekly B2B Buyers",
+  "seller.credit_score": "Farm Credit Score",
+  "seller.available_credit": "Available input credit",
+  "seller.request_credit": "Inputs on credit",
+  "seller.credit_approved": "Input credit approved",
+  "seller.crop_profit": "Profit by Crop",
+  "seller.draw_advance": "Draw advance",
+  "seller.sell_again": "Sell again",
+  "buyer.weekly_supply": "Repeat weekly (B2B)",
+  "buyer.subscribed": "Weekly supply contract activated"
 }

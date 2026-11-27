@@ -8,8 +8,12 @@ import { Field } from "../components/Field";
 import { Button } from "../components/ui/Button";
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
+import { useI18n } from "../context/I18nContext";
+import { toast } from "sonner";
 export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen, cart = [], cartTotal = 0, onCheckout }) {
+  const { t } = useI18n();
   const [l, setL] = useState(initial);
+  const [subBusy, setSubBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [qty, setQty] = useState(10);
   const [shot, setShot] = useState(0);
@@ -59,6 +63,27 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
   const hasRealPhotos = l.photos_data && l.photos_data.length > 0;
   const inCartItem = cart?.find((x) => x.id === l.id);
   const inCartQty = inCartItem?.qty || 0;
+  const subscribeWeekly = async () => {
+    const rawId = Number(String(l.id).replace("L-", ""));
+    if (!rawId) return;
+    setSubBusy(true);
+    try {
+      const next = new Date();
+      next.setDate(next.getDate() + 7);
+      await api.post(ENDPOINTS.subscriptions, {
+        listing: rawId,
+        quantity: qty,
+        frequency: "weekly",
+        delivery_mode: "Motorcycle",
+        next_run_date: next.toISOString().split("T")[0],
+      });
+      toast(t("buyer.subscribed"));
+    } catch (err) {
+      toast(err.message || "Failed");
+    } finally {
+      setSubBusy(false);
+    }
+  };
   return <div><div className="desktop-only row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}><button
     onClick={onBack}
     style={{
@@ -161,5 +186,10 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
     style={{ width: "100%" }}
     disabled={l.qty === 0}
     onClick={() => onAdd(l, qty)}
-  >{l.qty === 0 ? "Sold out" : "Add to basket"}</Button></div></div><div className="card"><h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--color-obsidian)" }}>{l.seller}</h3><div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "4px" }}>{typeLabel(l.sellerType)} · {l.district}</div><div className="row" style={{ marginTop: "10px", gap: "6px" }}><span style={{ fontSize: "14px", fontWeight: 700, color: "var(--color-forest-ink)" }}>{l.rating ? `${l.rating} \u2605` : "New seller"}</span>{l.ratings > 0 && <span style={{ fontSize: "12px", color: "var(--color-pebble)" }}>({l.ratings} reviews)</span>}</div></div></div></div><div className="mobile-buy-bar"><div><div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)" }}>{ugx(qty * l.price)}</div><div style={{ fontSize: "11px", color: "var(--color-slate)" }}>per {l.unit}</div></div><Button variant="primary" onClick={() => onAdd(l, qty)} disabled={l.qty === 0}>{l.qty === 0 ? "Sold out" : "Add to basket"}</Button></div></div>;
+  >{l.qty === 0 ? "Sold out" : "Add to basket"}</Button><Button
+    variant="outline"
+    style={{ width: "100%", marginTop: 8 }}
+    disabled={l.qty === 0 || subBusy}
+    onClick={subscribeWeekly}
+  >{subBusy ? t("buyer.processing") : t("buyer.weekly_supply")}</Button></div></div><div className="card"><h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--color-obsidian)" }}>{l.seller}</h3><div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "4px" }}>{typeLabel(l.sellerType)} · {l.district}</div><div className="row" style={{ marginTop: "10px", gap: "6px" }}><span style={{ fontSize: "14px", fontWeight: 700, color: "var(--color-forest-ink)" }}>{l.rating ? `${l.rating} \u2605` : "New seller"}</span>{l.ratings > 0 && <span style={{ fontSize: "12px", color: "var(--color-pebble)" }}>({l.ratings} reviews)</span>}</div></div></div></div><div className="mobile-buy-bar"><div><div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)" }}>{ugx(qty * l.price)}</div><div style={{ fontSize: "11px", color: "var(--color-slate)" }}>per {l.unit}</div></div><Button variant="primary" onClick={() => onAdd(l, qty)} disabled={l.qty === 0}>{l.qty === 0 ? "Sold out" : "Add to basket"}</Button></div></div>;
 }
