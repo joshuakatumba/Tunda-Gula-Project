@@ -7,6 +7,7 @@ app_name = "listings"
 router = DefaultRouter()
 router.register(r"plans", views.PreHarvestPlanViewSet, basename="plan")
 router.register(r"expenses", views.FarmExpenseViewSet, basename="expense")
+router.register(r"credit", views.InputCreditViewSet, basename="credit")
 router.register(r"", views.ListingViewSet, basename="listing")
 
 urlpatterns = [

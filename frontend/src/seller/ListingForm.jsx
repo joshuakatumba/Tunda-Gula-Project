@@ -7,8 +7,18 @@ import { Button } from "../components/ui/Button";
 import { Select } from "../components/ui/Select";
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== "undefined" ? "/api/v1" : "http://localhost:8000/api/v1");
 const DISTRICTS = ["Wakiso", "Kampala", "Mukono", "Mpigi", "Luweero", "Nakaseke", "Buikwe", "Mityana"];
-export default function ListingForm({ onClose, onSave }) {
-  const [d, setD] = useState({ name: "", cat: "Vegetables", qty: 100, unit: "kg", price: 2e3, note: "", district: "Wakiso", lat: "", lng: "" });
+export default function ListingForm({ onClose, onSave, initial = null }) {
+  const [d, setD] = useState({
+    name: initial?.name || "",
+    cat: initial?.cat || "Vegetables",
+    qty: initial?.qty || 100,
+    unit: initial?.unit || "kg",
+    price: initial?.price || 2000,
+    note: initial?.note || "",
+    district: initial?.district || "Wakiso",
+    lat: "",
+    lng: ""
+  });
   const [photos, setPhotos] = useState([]);
   const [thumbnail, setThumbnail] = useState(null);
   const [voiceBlob, setVoiceBlob] = useState(null);

@@ -98,13 +98,14 @@ class PreorderCreateSerializer(serializers.ModelSerializer):
 
 class SubscriptionOrderSerializer(serializers.ModelSerializer):
     listing_name = serializers.CharField(source="listing.name", read_only=True)
+    buyer_name = serializers.CharField(source="buyer.name", read_only=True)
     unit = serializers.CharField(source="listing.unit", read_only=True)
     price = serializers.IntegerField(source="listing.price", read_only=True)
 
     class Meta:
         model = SubscriptionOrder
         fields = [
-            "id", "listing", "listing_name", "unit", "price",
+            "id", "listing", "listing_name", "buyer_name", "unit", "price",
             "quantity", "frequency", "delivery_mode", "is_active",
             "next_run_date", "created_at",
         ]

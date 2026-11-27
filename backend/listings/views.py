@@ -1,14 +1,16 @@
-from rest_framework import viewsets, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from django.db.models import Sum, Avg, Count
 from django.utils import timezone
-from .models import Listing, PreHarvestPlan, FarmExpense
+from .models import Listing, PreHarvestPlan, FarmExpense, InputCreditRequest
 from .serializers import (
     ListingSerializer,
     ListingCreateSerializer,
     PreHarvestPlanSerializer,
     FarmExpenseSerializer,
+    InputCreditSerializer,
 )
 
 
@@ -138,6 +140,28 @@ class PreHarvestPlanViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(seller=self.request.user)
 
+    @action(detail=True, methods=["post"])
+    def request_advance(self, request, pk=None):
+        """Allow verified seller to draw up to 50% of escrowed pre-harvest deposits as an early advance."""
+        plan = self.get_object()
+        if plan.seller != request.user:
+            return Response({"error": "Not your harvest plan."}, status=status.HTTP_403_FORBIDDEN)
+        held_deposit = int(plan.reserved * plan.price * (plan.deposit_percentage / 100))
+        max_advance = held_deposit // 2
+        available = max(0, max_advance - plan.advance_drawn)
+        if available <= 0:
+            return Response({"error": "No advance available yet."}, status=status.HTTP_400_BAD_REQUEST)
+        plan.advance_drawn += available
+        plan.save(update_fields=["advance_drawn"])
+        from notifications.sms import send_sms
+        if request.user.phone:
+            send_sms(request.user.phone, f"Harvest advance of UGX {available:,} for {plan.name} sent to Mobile Money.")
+        return Response({
+            "advance_sent": available,
+            "total_advance_drawn": plan.advance_drawn,
+            "plan": PreHarvestPlanSerializer(plan).data,
+        })
+
 
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
@@ -211,6 +235,62 @@ class FarmExpenseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(seller=self.request.user)
+
+
+def _compute_credit(seller):
+    from orders.models import Order, Rating
+    score = 0
+    if seller.is_verified:
+        score += 20
+    delivered_count = Order.objects.filter(seller=seller, status=Order.Status.DELIVERED).count()
+    score += min(35, delivered_count * 7)
+    expense_count = FarmExpense.objects.filter(seller=seller).count()
+    score += min(20, expense_count * 4)
+    avg_rating = Rating.objects.filter(seller=seller).aggregate(avg=Avg("stars"))["avg"] or 0
+    score += min(25, int(avg_rating * 5))
+    score = min(100, score)
+
+    credit_limit = score * 10000  # Up to UGX 1,000,000
+    used_credit = (
+        InputCreditRequest.objects.filter(seller=seller, status__in=["pending", "approved"])
+        .aggregate(total=Sum("amount"))["total"] or 0
+    )
+    available_credit = max(0, credit_limit - used_credit)
+    tier = "Gold" if score >= 75 else "Silver" if score >= 45 else "Starter"
+    return {
+        "credit_score": score,
+        "credit_limit": credit_limit,
+        "used_credit": used_credit,
+        "available_credit": available_credit,
+        "credit_tier": tier,
+    }
+
+
+class InputCreditViewSet(viewsets.ModelViewSet):
+    """
+    /api/v1/listings/credit/
+    Farmers request seeds/fertilizer/transport credit up to their on-platform credit limit.
+    """
+    serializer_class = InputCreditSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    http_method_names = ["get", "post", "head", "options"]
+
+    def get_queryset(self):
+        if getattr(self.request.user, "role", None) != "seller":
+            return InputCreditRequest.objects.none()
+        return InputCreditRequest.objects.filter(seller=self.request.user)
+
+    def perform_create(self, serializer):
+        if self.request.user.role != "seller":
+            raise ValidationError({"error": "Seller account required."})
+        credit = _compute_credit(self.request.user)
+        amount = serializer.validated_data["amount"]
+        if amount <= 0 or amount > credit["available_credit"]:
+            raise ValidationError({"amount": f"Available credit limit is UGX {credit['available_credit']:,}."})
+        req = serializer.save(seller=self.request.user, status=InputCreditRequest.Status.APPROVED)
+        from notifications.sms import send_sms
+        if self.request.user.phone:
+            send_sms(self.request.user.phone, f"Input credit approved: UGX {req.amount:,} for {req.get_item_type_display()}. Auto-deducted from next payout.")
 
 
 @api_view(["GET"])
@@ -290,6 +370,7 @@ def seller_analytics(request):
                 "text": f"{worst['crop']} is currently at -UGX {abs(worst['profit']):,} net.",
             })
 
+    credit = _compute_credit(seller)
     return Response({
         "total_revenue": total_revenue,
         "total_expenses": total_expenses,
@@ -297,4 +378,5 @@ def seller_analytics(request):
         "margin_pct": margin_pct,
         "crops": crops,
         "insights": insights[:4],
+        **credit,
     })

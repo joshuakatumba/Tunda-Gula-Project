@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Listing, ListingPhoto, PreHarvestPlan, FarmExpense
+from .models import Listing, ListingPhoto, PreHarvestPlan, FarmExpense, InputCreditRequest
 
 
 class ListingPhotoSerializer(serializers.ModelSerializer):
@@ -104,11 +104,11 @@ class PreHarvestPlanSerializer(serializers.ModelSerializer):
             "id", "name", "category", "district",
             "date_planted", "expected_harvest",
             "quantity", "reserved", "available", "unit",
-            "price", "deposit_percentage",
+            "price", "deposit_percentage", "advance_drawn",
             "seller", "seller_name",
             "is_active", "created_at",
         ]
-        read_only_fields = ["seller", "reserved", "created_at"]
+        read_only_fields = ["seller", "reserved", "advance_drawn", "created_at"]
 
     def create(self, validated_data):
         if not validated_data.get("district"):
@@ -127,4 +127,13 @@ class FarmExpenseSerializer(serializers.ModelSerializer):
         model = FarmExpense
         fields = ["id", "crop_name", "category", "amount", "note", "date", "created_at"]
         read_only_fields = ["id", "created_at"]
+
+
+class InputCreditSerializer(serializers.ModelSerializer):
+    """Serializer for agro-input credit requests."""
+
+    class Meta:
+        model = InputCreditRequest
+        fields = ["id", "item_type", "amount", "status", "note", "created_at"]
+        read_only_fields = ["id", "status", "created_at"]
 

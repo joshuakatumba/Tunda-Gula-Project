@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { ugx, dshort } from "../utils/helpers";
 import { Head } from "../components/Head";
 import { Button } from "../components/ui/Button";
@@ -6,8 +7,9 @@ import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
 import { useI18n } from "../context/I18nContext";
 
-export default function SellerPlans({ myPlans, setPlans, onCreatePlan }) {
+export default function SellerPlans({ myPlans, setPlans, say, onCreatePlan }) {
   const { t, tp, tu } = useI18n();
+  const [busyId, setBusyId] = useState(null);
 
   const handleDelete = async (id) => {
     if (!window.confirm(`${t("common.cancel")}?`)) return;
@@ -16,6 +18,19 @@ export default function SellerPlans({ myPlans, setPlans, onCreatePlan }) {
       await api.delete(ENDPOINTS.plan(realId));
     } catch {}
     setPlans((ps) => ps.filter((x) => x.id !== id));
+  };
+
+  const handleAdvance = async (p) => {
+    const realId = p.id.replace("H-", "");
+    setBusyId(p.id);
+    try {
+      const res = await api.post(ENDPOINTS.planAdvance(realId));
+      say?.(`${t("seller.draw_advance")}: ${ugx(res.advance_sent)}`);
+    } catch (err) {
+      say?.(err.message || "No advance available");
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
@@ -35,22 +50,29 @@ export default function SellerPlans({ myPlans, setPlans, onCreatePlan }) {
             const pct = p.qty ? Math.min(100, Math.round((p.reserved / p.qty) * 100)) : 0;
             return (
               <div className="card" key={p.id} style={{ padding: 14 }}>
-                <div className="between" style={{ alignItems: "center" }}>
+                <div className="between" style={{ alignItems: "center", gap: 8 }}>
                   <div>
                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{tp(p.name)}</h3>
                     <div style={{ fontSize: 12, color: "var(--color-slate)" }}>
                       {dshort(p.harvest)} · {ugx(p.price)}/{tu(p.unit)}
                     </div>
                   </div>
-                  {p.reserved === 0 && (
-                    <button
-                      className="btn-sm"
-                      style={{ color: "var(--color-alarm-red)", borderColor: "var(--color-alarm-red)" }}
-                      onClick={() => handleDelete(p.id)}
-                    >
-                      {t("common.cancel")}
-                    </button>
-                  )}
+                  <div className="row" style={{ gap: 6 }}>
+                    {p.reserved > 0 && (
+                      <Button variant="primary" size="sm" disabled={busyId === p.id} onClick={() => handleAdvance(p)}>
+                        {busyId === p.id ? <Loader2 size={13} className="spin" /> : t("seller.draw_advance")}
+                      </Button>
+                    )}
+                    {p.reserved === 0 && (
+                      <button
+                        className="btn-sm"
+                        style={{ color: "var(--color-alarm-red)", borderColor: "var(--color-alarm-red)" }}
+                        onClick={() => handleDelete(p.id)}
+                      >
+                        {t("common.cancel")}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div style={{ marginTop: 10 }}>
                   <div style={{ height: 5, backgroundColor: "var(--color-fog)", borderRadius: "var(--radius-full)", overflow: "hidden", marginBottom: 4 }}>

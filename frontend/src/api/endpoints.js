@@ -15,10 +15,12 @@ export const ENDPOINTS = {
   listing: (id) => `/listings/${id}/`,
   plans: "/listings/plans/",
   plan: (id) => `/listings/plans/${id}/`,
+  planAdvance: (id) => `/listings/plans/${id}/request_advance/`,
   sellerDashboard: "/listings/seller/dashboard/",
   sellerAnalytics: "/listings/seller/analytics/",
   expenses: "/listings/expenses/",
   expense: (id) => `/listings/expenses/${id}/`,
+  credit: "/listings/credit/",
   // ── Orders ───────────────────────────────────────────────────────
   orders: "/orders/",
   order: (id) => `/orders/${id}/`,

@@ -182,6 +182,7 @@ class PreHarvestPlan(models.Model):
     )
 
     is_active = models.BooleanField(default=True)
+    advance_drawn = models.PositiveIntegerField(default=0, help_text="Pre-harvest deposit advance drawn in UGX")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -225,3 +226,38 @@ class FarmExpense(models.Model):
 
     def __str__(self):
         return f"{self.crop_name} ({self.category}) — UGX {self.amount:,}"
+
+
+class InputCreditRequest(models.Model):
+    """Agro-input credit tied to a farmer's on-platform sales & credit score."""
+
+    class ItemType(models.TextChoices):
+        SEEDS = "seeds", "Seeds"
+        FERTILIZER = "fertilizer", "Fertilizer"
+        PESTICIDES = "pesticides", "Pesticides"
+        TRANSPORT = "transport", "Transport"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        DEDUCTED = "deducted", "Repaid via payout"
+        REJECTED = "rejected", "Rejected"
+
+    seller = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="credit_requests",
+        limit_choices_to={"role": "seller"},
+    )
+    item_type = models.CharField(max_length=20, choices=ItemType.choices, default=ItemType.SEEDS)
+    amount = models.PositiveIntegerField(help_text="Credit requested in UGX")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.APPROVED)
+    note = models.CharField(max_length=200, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "tg_input_credit_requests"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Credit UGX {self.amount:,} ({self.item_type}) — {self.seller.name}"
