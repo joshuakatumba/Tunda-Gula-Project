@@ -5,9 +5,11 @@ import { Modal } from "../components/Modal";
 import { Field } from "../components/Field";
 import { Button } from "../components/ui/Button";
 import { Select } from "../components/ui/Select";
+import { useI18n } from "../context/I18nContext";
 const API_URL = import.meta.env.VITE_API_URL || (typeof window !== "undefined" ? "/api/v1" : "http://localhost:8000/api/v1");
 const DISTRICTS = ["Wakiso", "Kampala", "Mukono", "Mpigi", "Luweero", "Nakaseke", "Buikwe", "Mityana"];
 export default function ListingForm({ onClose, onSave, initial = null }) {
+  const { t, tu } = useI18n();
   const [d, setD] = useState({
     name: initial?.name || "",
     cat: initial?.cat || "Vegetables",
@@ -64,7 +66,7 @@ export default function ListingForm({ onClose, onSave, initial = null }) {
       setRec(true);
       setVoiceDuration(0);
     } catch {
-      setError("Microphone access denied.");
+      setError(t("err.mic_denied"));
     }
   };
   const stopRecording = () => {
@@ -121,40 +123,40 @@ export default function ListingForm({ onClose, onSave, initial = null }) {
       onSave(data);
       onClose();
     } catch (err) {
-      setError(err.message || "Failed to save listing.");
+      setError(err.message || t("err.save_failed"));
     } finally {
       setBusy(false);
     }
   };
   return <Modal
-    title="List produce"
+    title={t("form.list_produce")}
     onClose={onClose}
     footer={<Button
       variant="primary"
       block
       disabled={!d.name || busy}
       onClick={handleSave}
-    >{busy ? <Loader2 size={16} className="spin" /> : "Publish listing"}</Button>}
-  >{error && <div style={{ color: "var(--color-alarm-red)", background: "#FCE8E8", padding: "12px 16px", borderRadius: "var(--radius-cards)", fontSize: "13px" }}>{error}</div>}<Field label="Produce name"><input value={d.name} placeholder="e.g. Fresh tomatoes" onChange={(e) => setD({ ...d, name: e.target.value })} /></Field><Field label="Category"><Select
+    >{busy ? <Loader2 size={16} className="spin" /> : t("form.publish")}</Button>}
+  >{error && <div style={{ color: "var(--color-alarm-red)", background: "#FCE8E8", padding: "12px 16px", borderRadius: "var(--radius-cards)", fontSize: "13px" }}>{error}</div>}<Field label={t("form.produce_name")}><input value={d.name} placeholder={t("form.produce_placeholder")} onChange={(e) => setD({ ...d, name: e.target.value })} /></Field><Field label={t("form.category")}><Select
     value={d.cat}
     onChange={(val) => setD({ ...d, cat: val })}
-    options={CATEGORIES}
+    options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))}
     grid={true}
-  /></Field><div style={{ display: "flex", flexDirection: "column", gap: "20px" }}><Field label="Quantity"><input type="number" value={d.qty} onChange={(e) => setD({ ...d, qty: Number(e.target.value) })} /></Field><Field label="Unit"><Select
+  /></Field><div style={{ display: "flex", flexDirection: "column", gap: "20px" }}><Field label={t("form.quantity")}><input type="number" value={d.qty} onChange={(e) => setD({ ...d, qty: Number(e.target.value) })} /></Field><Field label={t("form.unit")}><Select
     value={d.unit}
     onChange={(val) => setD({ ...d, unit: val })}
-    options={["kg", "bunch", "bag", "head", "tray"]}
+    options={["kg", "bunch", "bag", "head", "tray"].map((u) => ({ value: u, label: tu(u) }))}
     grid={false}
-  /></Field><Field label="Price per unit (UGX)"><input type="number" value={d.price} onChange={(e) => setD({ ...d, price: Number(e.target.value) })} /></Field></div><Field label="District"><Select
+  /></Field><Field label={t("form.price_ugx")}><input type="number" value={d.price} onChange={(e) => setD({ ...d, price: Number(e.target.value) })} /></Field></div><Field label={t("buyer.district")}><Select
     value={d.district}
     onChange={(val) => setD({ ...d, district: val })}
     options={DISTRICTS}
     grid={false}
-  /></Field><Field label="Description"><textarea rows={2} value={d.note} placeholder="Add details..." onChange={(e) => setD({ ...d, note: e.target.value })} /></Field>{
+  /></Field><Field label={t("form.description")}><textarea rows={2} value={d.note} placeholder={t("form.desc_placeholder")} onChange={(e) => setD({ ...d, note: e.target.value })} /></Field>{
     /* Thumbnail */
-  }<Field label="Product Thumbnail"><div className="row" style={{ gap: 8 }}>{thumbnail ? <div style={{ position: "relative" }}><img
+  }<Field label={t("form.thumbnail")}><div className="row" style={{ gap: 8 }}>{thumbnail ? <div style={{ position: "relative" }}><img
     src={thumbnailUrl ?? void 0}
-    alt="Thumbnail"
+    alt={t("form.thumbnail")}
     style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8, border: "2px solid var(--color-lime-voltage)" }}
   /><button
     type="button"
@@ -180,10 +182,10 @@ export default function ListingForm({ onClose, onSave, initial = null }) {
     className="btn-sm"
     style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
     onClick={() => thumbnailInputRef.current?.click()}
-  ><Camera size={14} /> Upload Thumbnail
+  ><Camera size={14} /> {t("form.upload_thumb")}
             </button>}</div><input ref={thumbnailInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleThumbnailChange} /></Field>{
     /* Photos */
-  }<Field label="Photos"><div className="row" style={{ flexWrap: "wrap", gap: 8 }}>{photos.map((f, i) => <div key={i} style={{ position: "relative" }}><img
+  }<Field label={t("form.photos")}><div className="row" style={{ flexWrap: "wrap", gap: 8 }}>{photos.map((f, i) => <div key={i} style={{ position: "relative" }}><img
     src={URL.createObjectURL(f)}
     alt={f.name}
     style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 8, border: "1px solid var(--color-fog)" }}
@@ -211,30 +213,30 @@ export default function ListingForm({ onClose, onSave, initial = null }) {
     className="btn-sm"
     style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
     onClick={() => photoInputRef.current?.click()}
-  ><Camera size={14} /> Add photo
+  ><Camera size={14} /> {t("form.add_photo")}
             </button>}</div><input ref={photoInputRef} type="file" accept="image/*" multiple style={{ display: "none" }} onChange={handlePhotoChange} /></Field>{
     /* Voice note */
-  }<Field label="Voice description">{rec ? <button
+  }<Field label={t("form.voice_desc")}>{rec ? <button
     type="button"
     className="btn-sm"
     onClick={stopRecording}
     style={{ borderColor: "var(--color-alarm-red)", color: "var(--color-alarm-red)", display: "inline-flex", alignItems: "center", gap: 6 }}
-  ><Square size={14} fill="currentColor" /> Stop recording ({voiceDuration}s)
+  ><Square size={14} fill="currentColor" /> {t("form.stop_rec", { sec: voiceDuration })}
           </button> : voiceBlob ? <div className="row" style={{ gap: 8, flexWrap: "wrap" }}><audio controls src={URL.createObjectURL(voiceBlob)} style={{ height: 32 }} /><button
     type="button"
     className="btn-sm"
     onClick={startRecording}
     style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-  ><Mic size={14} /> Record again
+  ><Mic size={14} /> {t("form.record_again")}
             </button></div> : <button
     type="button"
     className="btn-sm"
     onClick={startRecording}
     style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-  ><Mic size={14} /> Record voice note
+  ><Mic size={14} /> {t("form.record_voice")}
           </button>}</Field>{
     /* GPS */
-  }<Field label="Farm location"><div className="row" style={{ gap: "10px", alignItems: "center" }}><button
+  }<Field label={t("form.farm_location")}><div className="row" style={{ gap: "10px", alignItems: "center" }}><button
     type="button"
     className="btn-sm"
     style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
@@ -244,9 +246,9 @@ export default function ListingForm({ onClose, onSave, initial = null }) {
           setGps(`${pos.coords.latitude.toFixed(4)}\xB0N, ${pos.coords.longitude.toFixed(4)}\xB0E`);
           setD((prev) => ({ ...prev, lat: String(pos.coords.latitude), lng: String(pos.coords.longitude) }));
         },
-        () => setGps("Location pinned to district")
+        () => setGps(t("err.gps_district"))
       );
     }}
-  ><MapPin size={14} /> Use GPS
-          </button><span style={{ fontSize: "13px", fontFamily: "var(--font-monospace)", color: "var(--color-slate)" }}>{gps || "Not pinned"}</span></div></Field></Modal>;
+  ><MapPin size={14} /> {t("form.use_gps")}
+          </button><span style={{ fontSize: "13px", fontFamily: "var(--font-monospace)", color: "var(--color-slate)" }}>{gps || t("common.not_pinned")}</span></div></Field></Modal>;
 }

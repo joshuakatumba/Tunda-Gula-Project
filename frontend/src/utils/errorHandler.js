@@ -1,8 +1,9 @@
+import { translate } from "../context/I18nContext";
 function prettifyField(field) {
   return field.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
 }
 export function formatApiError(err) {
-  if (!err) return "Something went wrong. Please try again.";
+  if (!err) return translate("err.generic");
   if (typeof err === "string") return err;
   const data = err.data || err.response?.data;
   if (data && typeof data === "object") {
@@ -18,12 +19,12 @@ export function formatApiError(err) {
   }
   if (err.message) {
     if (err.message === "Failed to fetch" || err.message.includes("NetworkError")) {
-      return "Could not reach the server. Check your internet connection.";
+      return translate("err.network");
     }
     if (err.message === "Unauthorized") {
-      return "Your session has expired. Please log in again.";
+      return translate("err.expired");
     }
     return err.message;
   }
-  return "Something went wrong. Please try again.";
+  return translate("err.generic");
 }

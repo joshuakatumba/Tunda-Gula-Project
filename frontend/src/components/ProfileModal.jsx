@@ -1,8 +1,10 @@
 import { Mail, Phone, MapPin, ShieldCheck, LogOut, X } from "lucide-react";
 import { typeLabel } from "../utils/helpers";
 import { Button } from "./ui/Button";
+import { useI18n } from "../context/I18nContext";
 export const ProfileModal = ({ user, onClose, onLogout }) => {
-  const roleDisplay = user.role === "admin" ? "Administrator" : user.role === "seller" ? `Seller \xB7 ${typeLabel(user.seller_type) || "Farmer"}` : `Buyer \xB7 ${typeLabel(user.buyer_type) || "Produce Buyer"}`;
+  const { t } = useI18n();
+  const roleDisplay = user.role === "admin" ? t("nav.role.admin") : user.role === "seller" ? `${t("auth.role.seller")} \xB7 ${typeLabel(user.seller_type) || t("nav.role.seller")}` : `${t("auth.role.buyer")} \xB7 ${typeLabel(user.buyer_type) || t("nav.role.buyer")}`;
   return <div className="veil" onClick={onClose}><div
     className="modal"
     style={{
@@ -24,10 +26,10 @@ export const ProfileModal = ({ user, onClose, onLogout }) => {
       borderBottom: "1px solid var(--color-fog)"
     }}
   ><div style={{ fontSize: 16, fontWeight: 700, color: "var(--color-obsidian)" }}>
-            Account Profile
+            {t("nav.account_profile")}
           </div><button
     onClick={onClose}
-    aria-label="Close"
+    aria-label={t("common.close")}
     style={{
       background: "transparent",
       border: "none",
@@ -75,7 +77,7 @@ export const ProfileModal = ({ user, onClose, onLogout }) => {
       padding: "4px 8px",
       borderRadius: 6
     }}
-  ><ShieldCheck size={14} /> Verified
+  ><ShieldCheck size={14} /> {t("buyer.verified")}
               </span>}</div><div
     style={{
       background: "var(--color-fog)",
@@ -86,7 +88,7 @@ export const ProfileModal = ({ user, onClose, onLogout }) => {
       gap: 12,
       marginBottom: 20
     }}
-  >{user.email && <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13.5 }}><Mail size={16} color="var(--color-slate)" /><span style={{ color: "var(--color-obsidian)", fontWeight: 500 }}>{user.email}</span></div>}{user.phone && <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13.5 }}><Phone size={16} color="var(--color-slate)" /><span style={{ color: "var(--color-obsidian)", fontWeight: 500 }}>{user.phone}</span></div>}{user.district && <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13.5 }}><MapPin size={16} color="var(--color-slate)" /><span style={{ color: "var(--color-obsidian)", fontWeight: 500 }}>{user.district} District</span></div>}</div><Button
+  >{user.email && <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13.5 }}><Mail size={16} color="var(--color-slate)" /><span style={{ color: "var(--color-obsidian)", fontWeight: 500 }}>{user.email}</span></div>}{user.phone && <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13.5 }}><Phone size={16} color="var(--color-slate)" /><span style={{ color: "var(--color-obsidian)", fontWeight: 500 }}>{user.phone}</span></div>}{user.district && <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13.5 }}><MapPin size={16} color="var(--color-slate)" /><span style={{ color: "var(--color-obsidian)", fontWeight: 500 }}>{t("nav.district_suffix", { district: user.district })}</span></div>}</div><Button
     variant="outline"
     style={{
       width: "100%",
@@ -98,6 +100,6 @@ export const ProfileModal = ({ user, onClose, onLogout }) => {
       onClose();
       onLogout();
     }}
-  ><LogOut size={16} style={{ marginRight: 8 }} /> Log out
+  ><LogOut size={16} style={{ marginRight: 8 }} /> {t("nav.logout")}
           </Button></div></div></div>;
 };

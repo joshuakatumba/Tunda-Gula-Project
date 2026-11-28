@@ -6,7 +6,9 @@ import { Modal } from "../components/Modal";
 import { Field } from "../components/Field";
 import { Button } from "../components/ui/Button";
 import { Thumb } from "../components/Thumb";
-export default function Checkout({ cart, setCart, commission, onClose, onPay, t, session }) {
+import { useI18n } from "../context/I18nContext";
+export default function Checkout({ cart, setCart, commission, onClose, onPay, session }) {
+  const { t, tp, tu } = useI18n();
   const [provider, setProvider] = useState("MTN");
   const [phone, setPhone] = useState(session?.phone || "");
   const [deliveryMode, setDeliveryMode] = useState("Motorcycle");
@@ -44,23 +46,23 @@ export default function Checkout({ cart, setCart, commission, onClose, onPay, t,
         onClose();
       }, 1200);
     } catch (err) {
-      setErrorMsg(err?.message || "Payment failed. Please try again.");
+      setErrorMsg(err?.message || t("err.payment_failed"));
       setStage("cart");
     } finally {
       setSubmitting(false);
     }
   };
   const footer = stage === "cart" ? <div style={{ display: "flex", gap: "10px", width: "100%" }}><Button variant="outline" onClick={onClose} disabled={submitting}>
-        Cancel
+        {t("common.cancel")}
       </Button><Button
     variant="primary"
     style={{ flex: 1 }}
     disabled={!cart.length || submitting}
     onClick={go}
-  >{submitting ? <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Loader2 size={16} className="spin" /> Processing...
-          </span> : `Pay \xB7 ${ugx(total)}`}</Button></div> : void 0;
+  >{submitting ? <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}><Loader2 size={16} className="spin" /> {t("buyer.processing")}
+          </span> : t("checkout.pay_btn", { amount: ugx(total) })}</Button></div> : void 0;
   return <Modal
-    title={stage === "cart" ? "Basket" : stage === "waiting" ? "Payment" : "Confirmed"}
+    title={stage === "cart" ? t("buyer.basket") : stage === "waiting" ? t("buyer.checkout_wait") : t("buyer.confirmed")}
     onClose={onClose}
     wide={stage === "cart"}
     footer={footer}
@@ -86,7 +88,7 @@ export default function Checkout({ cart, setCart, commission, onClose, onPay, t,
       padding: "12px",
       background: "var(--color-paper)"
     }}
-  ><div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}><div style={{ display: "flex", gap: "10px", alignItems: "center" }}><Thumb src={c.thumbnail} alt={c.name} fallback={EMOJI[c.cat] || "\u{1F96C}"} size={44} /><div><strong style={{ fontSize: "15px", color: "var(--color-obsidian)", display: "block" }}>{c.name}</strong><div style={{ fontSize: "12px", color: "var(--color-slate)" }}>{c.seller} · {ugx(c.price)} / {c.unit}</div></div></div><button
+  ><div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "10px" }}><div style={{ display: "flex", gap: "10px", alignItems: "center" }}><Thumb src={c.thumbnail} alt={tp(c.name)} fallback={EMOJI[c.cat] || "\u{1F96C}"} size={44} /><div><strong style={{ fontSize: "15px", color: "var(--color-obsidian)", display: "block" }}>{tp(c.name)}</strong><div style={{ fontSize: "12px", color: "var(--color-slate)" }}>{c.seller} · {ugx(c.price)} / {tu(c.unit)}</div></div></div><button
     className="btn-sm"
     style={{
       background: "transparent",
@@ -119,7 +121,7 @@ export default function Checkout({ cart, setCart, commission, onClose, onPay, t,
     }}
     onClick={() => updateQty(c.id, -1)}
     disabled={c.qty <= 1}
-  ><Minus size={13} /></button><span style={{ fontWeight: 700, minWidth: "40px", textAlign: "center", fontSize: "13px" }}>{c.qty} {c.unit}</span><button
+  ><Minus size={13} /></button><span style={{ fontWeight: 700, minWidth: "40px", textAlign: "center", fontSize: "13px" }}>{c.qty} {tu(c.unit)}</span><button
     type="button"
     className="btn-sm"
     style={{
@@ -135,10 +137,10 @@ export default function Checkout({ cart, setCart, commission, onClose, onPay, t,
     onClick={() => updateQty(c.id, 1)}
   ><Plus size={13} /></button></div><span style={{ fontWeight: 700, fontSize: "15px", color: "var(--color-forest-ink)" }}>{ugx(c.qty * c.price)}</span></div></div>)}</div>{
     /* Delivery Mode */
-  }<Field label="Delivery"><div className="grid g3" style={{ gap: "8px" }}>{[
-    { id: "Motorcycle", label: "Boda Boda" },
-    { id: "Motor truck", label: "Motor truck" },
-    { id: "Pickup", label: "Self Pickup" }
+  }<Field label={t("buyer.delivery")}><div className="grid g3" style={{ gap: "8px" }}>{[
+    { id: "Motorcycle", label: t("delivery.Motorcycle") },
+    { id: "Motor truck", label: t("delivery.Motor truck") },
+    { id: "Pickup", label: t("delivery.Pickup") }
   ].map((m) => <button
     key={m.id}
     type="button"
@@ -157,7 +159,7 @@ export default function Checkout({ cart, setCart, commission, onClose, onPay, t,
     }}
   >{m.label}</button>)}</div></Field>{
     /* Payment Method */
-  }<Field label="Payment"><div className="grid g2" style={{ gap: "10px" }}>{["MTN", "Airtel"].map((p) => <button
+  }<Field label={t("buyer.payment")}><div className="grid g2" style={{ gap: "10px" }}>{["MTN", "Airtel"].map((p) => <button
     key={p}
     type="button"
     onClick={() => setProvider(p)}
@@ -176,9 +178,9 @@ export default function Checkout({ cart, setCart, commission, onClose, onPay, t,
       cursor: "pointer",
       fontSize: "14px"
     }}
-  ><Smartphone size={18} /><span>{p} Mobile Money</span></button>)}</div></Field>{
+  ><Smartphone size={18} /><span>{t("checkout.momo_label", { provider: p })}</span></button>)}</div></Field>{
     /* Phone Number */
-  }<Field label="Phone number"><input
+  }<Field label={t("auth.phone")}><input
     type="tel"
     value={phone}
     placeholder="0772 000 000"
@@ -193,13 +195,13 @@ export default function Checkout({ cart, setCart, commission, onClose, onPay, t,
     }}
   /></Field>{
     /* Pricing Breakdown */
-  }<div style={{ background: "var(--color-fog)", padding: "12px", borderRadius: "var(--radius-cards)" }}><div className="between" style={{ fontSize: "13px", color: "var(--color-slate)" }}><span>Subtotal</span><span style={{ fontFamily: "var(--font-monospace)", fontWeight: 600 }}>{ugx(total)}</span></div>{commission > 0 && <div className="between" style={{ marginTop: "6px", fontSize: "13px", color: "var(--color-slate)" }}><span>Platform fee ({commission}%)</span><span style={{ fontFamily: "var(--font-monospace)" }}>{ugx(Math.round(total * commission / 100))}</span></div>}<div className="rule" style={{ margin: "10px 0" }} /><div className="between" style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-obsidian)" }}><span>Total</span><span style={{ fontFamily: "var(--font-monospace)", color: "var(--color-forest-ink)" }}>{ugx(total + (commission > 0 ? Math.round(total * commission / 100) : 0))}</span></div></div></div>}{stage === "waiting" && <div style={{ textAlign: "center", padding: "40px 16px" }}><div style={{ color: "var(--color-forest-ink)", display: "flex", justifyContent: "center" }}><Loader2 size={48} className="spin" /></div><h3 style={{ margin: "20px 0 8px", fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)" }}>
-            Approve on phone
+  }<div style={{ background: "var(--color-fog)", padding: "12px", borderRadius: "var(--radius-cards)" }}><div className="between" style={{ fontSize: "13px", color: "var(--color-slate)" }}><span>{t("checkout.subtotal")}</span><span style={{ fontFamily: "var(--font-monospace)", fontWeight: 600 }}>{ugx(total)}</span></div>{commission > 0 && <div className="between" style={{ marginTop: "6px", fontSize: "13px", color: "var(--color-slate)" }}><span>{t("checkout.platform_fee", { pct: commission })}</span><span style={{ fontFamily: "var(--font-monospace)" }}>{ugx(Math.round(total * commission / 100))}</span></div>}<div className="rule" style={{ margin: "10px 0" }} /><div className="between" style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-obsidian)" }}><span>{t("checkout.total")}</span><span style={{ fontFamily: "var(--font-monospace)", color: "var(--color-forest-ink)" }}>{ugx(total + (commission > 0 ? Math.round(total * commission / 100) : 0))}</span></div></div></div>}{stage === "waiting" && <div style={{ textAlign: "center", padding: "40px 16px" }}><div style={{ color: "var(--color-forest-ink)", display: "flex", justifyContent: "center" }}><Loader2 size={48} className="spin" /></div><h3 style={{ margin: "20px 0 8px", fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)" }}>
+            {t("checkout.approve_phone")}
           </h3><p style={{ margin: 0, fontSize: "14px", color: "var(--color-slate)" }}>
-            Enter your PIN on {phone || "your phone"} to pay {ugx(total)}.
+            {t("checkout.enter_pin", { phone: phone || t("checkout.your_phone"), amount: ugx(total) })}
           </p></div>}{stage === "done" && <div style={{ textAlign: "center", padding: "40px 16px" }}><div style={{ color: "var(--color-spruce)", display: "flex", justifyContent: "center" }}><CheckCircle size={56} /></div><h3 style={{ margin: "20px 0 8px", fontSize: "20px", fontWeight: 700, color: "var(--color-obsidian)" }}>
-            Payment confirmed
+            {t("checkout.payment_confirmed")}
           </h3><p style={{ margin: 0, fontSize: "14px", color: "var(--color-slate)" }}>
-            Order placed successfully.
+            {t("checkout.order_placed")}
           </p></div>}</Modal>;
 }

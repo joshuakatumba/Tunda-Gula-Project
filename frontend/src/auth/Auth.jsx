@@ -147,7 +147,7 @@ export default function Auth({ init, onClose, onDone, say }) {
 
   const pinGps = () => {
     if (!navigator.geolocation) {
-      setGps("GPS unavailable");
+      setGps(t("err.gps_unavailable"));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -157,7 +157,7 @@ export default function Auth({ init, onClose, onDone, say }) {
         setGpsCoords({ lat, lng });
         setGps(`${lat}, ${lng}`);
       },
-      () => setError("GPS unavailable")
+      () => setError(t("err.gps_unavailable"))
     );
   };
 
@@ -261,7 +261,7 @@ export default function Auth({ init, onClose, onDone, say }) {
       {step === "type" && (
         <>
           <div className="stack">
-            {TYPES.map(x => <Pick key={x.id} on={type === x.id} ic={x.ic} t={x.t} d={x.d} onClick={() => setType(x.id)} />)}
+            {TYPES.map(x => <Pick key={x.id} on={type === x.id} ic={x.ic} t={t(`type.${x.id}`)} d={t(`type.${x.id}_desc`)} onClick={() => setType(x.id)} />)}
           </div>
           <Button variant="primary" disabled={!type} onClick={() => setStep("details")}>{t("common.continue")}</Button>
         </>

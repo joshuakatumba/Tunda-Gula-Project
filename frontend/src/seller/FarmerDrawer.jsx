@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { useI18n } from "../context/I18nContext";
 export const FarmerDrawer = ({
   open,
   onClose,
@@ -7,6 +8,7 @@ export const FarmerDrawer = ({
   activeTab,
   onTabChange
 }) => {
+  const { t } = useI18n();
   const [shouldRender, setShouldRender] = useState(open);
   const [animatingOut, setAnimatingOut] = useState(false);
   useEffect(() => {
@@ -47,10 +49,10 @@ export const FarmerDrawer = ({
       animation: !animatingOut ? "farmerSlideRight 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards" : void 0
     }}
   ><div className="drawer-header"><div style={{ fontSize: "16px", fontWeight: 700, color: "var(--color-obsidian)" }}>
-            Farmer Menu
+            {t("nav.farmer_menu")}
           </div><button
     onClick={handleClose}
-    aria-label="Close"
+    aria-label={t("common.close")}
     style={{
       background: "var(--color-fog)",
       border: "none",

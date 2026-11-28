@@ -11,7 +11,7 @@ import { ENDPOINTS } from "../api/endpoints";
 import { useI18n } from "../context/I18nContext";
 import { toast } from "sonner";
 export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen, cart = [], cartTotal = 0, onCheckout }) {
-  const { t } = useI18n();
+  const { t, tp, tu } = useI18n();
   const [l, setL] = useState(initial);
   const [subBusy, setSubBusy] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -98,19 +98,19 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
       cursor: "pointer",
       padding: 0
     }}
-  ><ArrowLeft size={16} /> Back
+  ><ArrowLeft size={16} /> {t("common.back")}
         </button>{cart && cart.length > 0 && onCheckout && <Button
     variant="primary"
     size="sm"
     onClick={onCheckout}
     style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
-  ><ShoppingBag size={16} /><span>Basket ({cart.length})</span></Button>}</div>{loading && <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--color-slate)", marginBottom: "12px" }}><Loader2 size={14} className="spin" /> Loading details...
+  ><ShoppingBag size={16} /><span>{t("buyer.basket")} ({cart.length})</span></Button>}</div>{loading && <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", color: "var(--color-slate)", marginBottom: "12px" }}><Loader2 size={14} className="spin" /> {t("detail.loading")}
         </div>}<div className="listing-layout"><div className="stack" style={{ gap: "20px" }}><div className="card" style={{ padding: 0, overflow: "hidden" }}><div style={{ height: 320, background: "var(--color-fog)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 96, position: "relative" }}><button
     className="listing-mobile-back"
     onClick={onBack}
-    aria-label="Back"
-    title="Back"
-  ><ArrowLeft size={18} /></button>{l.thumbnail ? <img src={resolveMediaUrl(l.thumbnail) || void 0} alt={l.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : hasRealPhotos ? <img src={resolveMediaUrl(l.photos_data[shot]?.image) || void 0} alt={l.name} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>{EMOJI[l.cat]}</span>}</div>{(hasRealPhotos || l.photos > 0) && <div className="row" style={{ padding: "16px", gap: "10px", background: "var(--color-paper)", borderTop: "1px solid var(--color-fog)" }}>{hasRealPhotos ? l.photos_data.map((p, i) => <button
+    aria-label={t("common.back")}
+    title={t("common.back")}
+  ><ArrowLeft size={18} /></button>{l.thumbnail ? <img src={resolveMediaUrl(l.thumbnail) || void 0} alt={tp(l.name)} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : hasRealPhotos ? <img src={resolveMediaUrl(l.photos_data[shot]?.image) || void 0} alt={tp(l.name)} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>{EMOJI[l.cat]}</span>}</div>{(hasRealPhotos || l.photos > 0) && <div className="row" style={{ padding: "16px", gap: "10px", background: "var(--color-paper)", borderTop: "1px solid var(--color-fog)" }}>{hasRealPhotos ? l.photos_data.map((p, i) => <button
     key={p.id}
     onClick={() => setShot(i)}
     style={{
@@ -122,7 +122,7 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
       padding: 0,
       cursor: "pointer"
     }}
-  ><img src={resolveMediaUrl(p.image) || void 0} alt={`Photo ${i + 1}`} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></button>) : Array.from({ length: l.photos }).map((_, i) => <button
+  ><img src={resolveMediaUrl(p.image) || void 0} alt={`${i + 1}`} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></button>) : Array.from({ length: l.photos }).map((_, i) => <button
     key={i}
     onClick={() => setShot(i)}
     style={{
@@ -134,8 +134,8 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
       fontSize: 24,
       cursor: "pointer"
     }}
-  >{EMOJI[l.cat]}</button>)}<span style={{ marginLeft: "auto", fontSize: "12px", fontWeight: 600, color: "var(--color-slate)" }}>{l.photos} photos
-                </span></div>}</div><div className="card"><div className="row" style={{ gap: "6px" }}>{l.verified && <Badge tone="b-green">Verified</Badge>}{l.top && <Badge tone="b-maize">Top seller</Badge>}<Badge>{l.cat}</Badge></div><h1 style={{ marginTop: "12px", fontSize: "28px", fontWeight: 700, color: "var(--color-obsidian)" }}>{l.name}</h1>{l.note && <p style={{ fontSize: "16px", color: "var(--color-charcoal)", lineHeight: 1.5, margin: "8px 0 0" }}>{l.note}</p>}{l.voice > 0 && <div style={{ marginTop: "16px", background: "var(--color-linen-mist)", padding: "16px", borderRadius: "var(--radius-cards)" }}>{l.voice_file ? <><audio ref={audioRef} src={l.voice_file} onEnded={() => setPlaying(false)} style={{ display: "none" }} /><div className="row" style={{ gap: "12px" }}><button
+  >{EMOJI[l.cat]}</button>)}<span style={{ marginLeft: "auto", fontSize: "12px", fontWeight: 600, color: "var(--color-slate)" }}>{t("detail.photos_count", { count: l.photos })}
+                </span></div>}</div><div className="card"><div className="row" style={{ gap: "6px" }}>{l.verified && <Badge tone="b-green">{t("buyer.verified")}</Badge>}{l.top && <Badge tone="b-maize">{t("detail.top_seller")}</Badge>}<Badge>{t(`cat.${l.cat}`)}</Badge></div><h1 style={{ marginTop: "12px", fontSize: "28px", fontWeight: 700, color: "var(--color-obsidian)" }}>{tp(l.name)}</h1>{l.note && <p style={{ fontSize: "16px", color: "var(--color-charcoal)", lineHeight: 1.5, margin: "8px 0 0" }}>{l.note}</p>}{l.voice > 0 && <div style={{ marginTop: "16px", background: "var(--color-linen-mist)", padding: "16px", borderRadius: "var(--radius-cards)" }}>{l.voice_file ? <><audio ref={audioRef} src={l.voice_file} onEnded={() => setPlaying(false)} style={{ display: "none" }} /><div className="row" style={{ gap: "12px" }}><button
     className="btn-sm"
     style={{
       background: "var(--color-paper)",
@@ -144,14 +144,14 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
       fontWeight: 600
     }}
     onClick={toggleVoice}
-  >{playing ? <><Pause size={14} /> Pause</> : <><Play size={14} /> Play voice note</>}</button><span style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-forest-ink)" }}>{l.voice}s recording
-                      </span></div></> : <div className="row" style={{ gap: "8px", color: "var(--color-forest-ink)", fontSize: "14px" }}><Mic size={16} /><span>Voice description: {l.voice}s</span></div>}</div>}<div className="grid g2" style={{ marginTop: "20px" }}><div><div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, color: "var(--color-slate)" }}>Available</div><div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)", marginTop: "4px" }}>{l.qty} {l.unit}</div></div><div><div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, color: "var(--color-slate)" }}>Market reference</div><div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)", marginTop: "4px" }}>{ugx(l.ref)} / {l.unit}</div></div></div></div><div className="card"><h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 12px", color: "var(--color-obsidian)" }}>Location</h2><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-forest-ink)", fontSize: "15px", fontWeight: 500 }}><MapPin size={18} /> {l.district} district
-            </div></div>{other.length > 0 && <div className="card"><h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 16px", color: "var(--color-obsidian)" }}>More from this seller</h2><div className="grid g3">{other.map((o) => <button
+  >{playing ? <><Pause size={14} /> {t("detail.pause")}</> : <><Play size={14} /> {t("detail.play_voice")}</>}</button><span style={{ fontSize: "12px", fontWeight: 600, color: "var(--color-forest-ink)" }}>{t("detail.recording_sec", { sec: l.voice })}
+                      </span></div></> : <div className="row" style={{ gap: "8px", color: "var(--color-forest-ink)", fontSize: "14px" }}><Mic size={16} /><span>{t("detail.voice_desc_sec", { sec: l.voice })}</span></div>}</div>}<div className="grid g2" style={{ marginTop: "20px" }}><div><div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, color: "var(--color-slate)" }}>{t("detail.available")}</div><div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)", marginTop: "4px" }}>{l.qty} {tu(l.unit)}</div></div><div><div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, color: "var(--color-slate)" }}>{t("detail.market_ref")}</div><div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)", marginTop: "4px" }}>{ugx(l.ref)} / {tu(l.unit)}</div></div></div></div><div className="card"><h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 12px", color: "var(--color-obsidian)" }}>{t("detail.location")}</h2><div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--color-forest-ink)", fontSize: "15px", fontWeight: 500 }}><MapPin size={18} /> {t("nav.district_suffix", { district: l.district })}
+            </div></div>{other.length > 0 && <div className="card"><h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 16px", color: "var(--color-obsidian)" }}>{t("detail.more_from_seller")}</h2><div className="grid g3">{other.map((o) => <button
     key={o.id}
     className="listing"
     onClick={() => onOpen(o.id)}
     style={{ textAlign: "left", cursor: "pointer", padding: 0 }}
-  ><div style={{ background: "var(--color-fog)", height: 70, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}><span>{EMOJI[o.cat]}</span></div><div style={{ padding: "10px" }}><h4 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>{o.name}</h4><div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-forest-ink)", marginTop: "4px" }}>{ugx(o.price)} / {o.unit}</div></div></button>)}</div></div>}</div><div className="stack" style={{ position: "sticky", top: 90, gap: "16px" }}><div className="card"><div style={{ fontSize: "28px", fontWeight: 700, color: "var(--color-forest-ink)" }}>{ugx(l.price)}</div><div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "2px" }}>per {l.unit} · ref {ugx(l.ref)}</div><div className="rule" style={{ margin: "16px 0" }} /><Field label={`Quantity (${l.unit})`}><div className="row" style={{ gap: 8, flexWrap: "nowrap" }}><button
+  ><div style={{ background: "var(--color-fog)", height: 70, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}><span>{EMOJI[o.cat]}</span></div><div style={{ padding: "10px" }}><h4 style={{ margin: 0, fontSize: "14px", fontWeight: 600 }}>{tp(o.name)}</h4><div style={{ fontSize: "13px", fontWeight: 700, color: "var(--color-forest-ink)", marginTop: "4px" }}>{ugx(o.price)} / {tu(o.unit)}</div></div></button>)}</div></div>}</div><div className="stack" style={{ position: "sticky", top: 90, gap: "16px" }}><div className="card"><div style={{ fontSize: "28px", fontWeight: 700, color: "var(--color-forest-ink)" }}>{ugx(l.price)}</div><div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "2px" }}>{t("detail.per_unit_ref", { unit: tu(l.unit), ref: ugx(l.ref) })}</div><div className="rule" style={{ margin: "16px 0" }} /><Field label={t("buyer.qty_label", { unit: tu(l.unit) })}><div className="row" style={{ gap: 8, flexWrap: "nowrap" }}><button
     type="button"
     className="btn-sm"
     style={{ width: "36px", height: "36px", fontSize: "16px", fontWeight: "bold" }}
@@ -181,15 +181,15 @@ export default function ListingDetail({ l: initial, other, onBack, onAdd, onOpen
     disabled={qty >= l.qty}
   >
                   +
-                </button></div></Field><div className="between" style={{ marginTop: "16px", alignItems: "center" }}><span style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-slate)" }}>Total</span><strong style={{ fontSize: "20px", color: "var(--color-obsidian)" }}>{ugx(qty * l.price)}</strong></div><div style={{ marginTop: "16px" }}><Button
+                </button></div></Field><div className="between" style={{ marginTop: "16px", alignItems: "center" }}><span style={{ fontSize: "14px", fontWeight: 600, color: "var(--color-slate)" }}>{t("checkout.total")}</span><strong style={{ fontSize: "20px", color: "var(--color-obsidian)" }}>{ugx(qty * l.price)}</strong></div><div style={{ marginTop: "16px" }}><Button
     variant="primary"
     style={{ width: "100%" }}
     disabled={l.qty === 0}
     onClick={() => onAdd(l, qty)}
-  >{l.qty === 0 ? "Sold out" : "Add to basket"}</Button><Button
+  >{l.qty === 0 ? t("buyer.sold_out") : t("buyer.add_basket")}</Button><Button
     variant="outline"
     style={{ width: "100%", marginTop: 8 }}
     disabled={l.qty === 0 || subBusy}
     onClick={subscribeWeekly}
-  >{subBusy ? t("buyer.processing") : t("buyer.weekly_supply")}</Button></div></div><div className="card"><h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--color-obsidian)" }}>{l.seller}</h3><div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "4px" }}>{typeLabel(l.sellerType)} · {l.district}</div><div className="row" style={{ marginTop: "10px", gap: "6px" }}><span style={{ fontSize: "14px", fontWeight: 700, color: "var(--color-forest-ink)" }}>{l.rating ? `${l.rating} \u2605` : "New seller"}</span>{l.ratings > 0 && <span style={{ fontSize: "12px", color: "var(--color-pebble)" }}>({l.ratings} reviews)</span>}</div></div></div></div><div className="mobile-buy-bar"><div><div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)" }}>{ugx(qty * l.price)}</div><div style={{ fontSize: "11px", color: "var(--color-slate)" }}>per {l.unit}</div></div><Button variant="primary" onClick={() => onAdd(l, qty)} disabled={l.qty === 0}>{l.qty === 0 ? "Sold out" : "Add to basket"}</Button></div></div>;
+  >{subBusy ? t("buyer.processing") : t("buyer.weekly_supply")}</Button></div></div><div className="card"><h3 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "var(--color-obsidian)" }}>{l.seller}</h3><div style={{ fontSize: "13px", color: "var(--color-slate)", marginTop: "4px" }}>{typeLabel(l.sellerType) ? `${typeLabel(l.sellerType)} · ` : ""}{l.district}</div><div className="row" style={{ marginTop: "10px", gap: "6px" }}><span style={{ fontSize: "14px", fontWeight: 700, color: "var(--color-forest-ink)" }}>{l.rating ? `${l.rating} \u2605` : t("detail.new_seller")}</span>{l.ratings > 0 && <span style={{ fontSize: "12px", color: "var(--color-pebble)" }}>{t("detail.reviews_count", { count: l.ratings })}</span>}</div></div></div></div><div className="mobile-buy-bar"><div><div style={{ fontSize: "18px", fontWeight: 700, color: "var(--color-obsidian)" }}>{ugx(qty * l.price)}</div><div style={{ fontSize: "11px", color: "var(--color-slate)" }}>{t("detail.per_unit", { unit: tu(l.unit) })}</div></div><Button variant="primary" onClick={() => onAdd(l, qty)} disabled={l.qty === 0}>{l.qty === 0 ? t("buyer.sold_out") : t("buyer.add_basket")}</Button></div></div>;
 }

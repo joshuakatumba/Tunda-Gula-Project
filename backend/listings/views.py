@@ -345,12 +345,14 @@ def seller_analytics(request):
                 insights.append({
                     "type": "price_up",
                     "crop": listing.name,
+                    "params": {"price": f"{listing.price:,}", "pct": abs(diff_pct), "ref": f"{ref.price:,}"},
                     "text": f"{listing.name}: your price ({listing.price:,}) is {abs(diff_pct)}% below market ({ref.price:,}).",
                 })
             elif diff_pct >= 15:
                 insights.append({
                     "type": "price_high",
                     "crop": listing.name,
+                    "params": {"pct": diff_pct, "ref": f"{ref.price:,}"},
                     "text": f"{listing.name}: priced {diff_pct}% above market ({ref.price:,}) — may sell slower.",
                 })
 
@@ -360,6 +362,7 @@ def seller_analytics(request):
             insights.append({
                 "type": "top_crop",
                 "crop": best["crop"],
+                "params": {"profit": f"{best['profit']:,}"},
                 "text": f"Top earner: {best['crop']} (+UGX {best['profit']:,} net).",
             })
         worst = crops[-1]
@@ -367,6 +370,7 @@ def seller_analytics(request):
             insights.append({
                 "type": "loss_crop",
                 "crop": worst["crop"],
+                "params": {"profit": f"{abs(worst['profit']):,}"},
                 "text": f"{worst['crop']} is currently at -UGX {abs(worst['profit']):,} net.",
             })
 

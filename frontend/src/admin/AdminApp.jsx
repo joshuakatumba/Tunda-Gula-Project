@@ -9,7 +9,9 @@ import AdminDelivery from "./AdminDelivery";
 import AdminReports from "./AdminReports";
 import RejectModal from "./RejectModal";
 import ResolveModal from "./ResolveModal";
+import { useI18n } from "../context/I18nContext";
 export default function AdminApp(props) {
+  const { t } = useI18n();
   const {
     tab,
     listings,
@@ -43,7 +45,7 @@ export default function AdminApp(props) {
     }
     pushSms("Seller \xB7 " + s.name, approve ? "Your TundaGula account is verified. You can start listing produce today." : `Verification not approved: ${reason}. Reply HELP or visit an agent to fix it.`);
     setReviewing(null);
-    say(approve ? `${s.name} verified \u2014 SMS sent` : `${s.name} rejected \u2014 reason sent by SMS`);
+    say(approve ? t("toast.seller_approved", { name: s.name }) : t("toast.seller_rejected", { name: s.name }));
   };
   const handleCommissionChange = async (val) => {
     setCommission(val);
@@ -60,14 +62,15 @@ export default function AdminApp(props) {
     }
   };
   return <>{tab === "overview" && <AdminOverview orders={orders} commission={commission} setCommission={handleCommissionChange} depositDefault={depositDefault} setDepositDefault={handleDepositChange} pending={pending} />}{tab === "verify" && <AdminVerify pending={pending} onApprove={(s) => decide(s, true)} onReview={setReviewing} />}{tab === "accounts" && <AdminAccounts listings={listings} setListings={setListings} say={say} />}{tab === "disputes" && <AdminDisputes disputes={disputes} onResolve={setResolving} />}{tab === "adelivery" && <AdminDelivery />}{tab === "areports" && <AdminReports listings={listings} say={say} />}{reviewing && <RejectModal seller={reviewing} onClose={() => setReviewing(null)} onReject={(r) => decide(reviewing, false, r)} />}{resolving && <ResolveModal dispute={resolving} onClose={() => setResolving(null)} onResolve={async (decision) => {
+    const payload = typeof decision === "string" ? { resolution: decision } : decision;
     try {
       const disputeId = resolving.id.replace("D-", "");
-      await api.post(ENDPOINTS.disputeResolve(disputeId), { resolution: decision });
+      await api.post(ENDPOINTS.disputeResolve(disputeId), payload);
       if (fetchData) fetchData();
     } catch {
-      setDisputes((ds) => ds.map((x) => x.id === resolving.id ? { ...x, status: "resolved", resolution: decision } : x));
+      setDisputes((ds) => ds.map((x) => x.id === resolving.id ? { ...x, status: "resolved", resolution: payload.resolution } : x));
     }
     setResolving(null);
-    say("Decision recorded. Both parties notified by SMS.");
+    say(t("toast.dispute_resolved"));
   }} />}</>;
 }

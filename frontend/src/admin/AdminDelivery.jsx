@@ -41,14 +41,14 @@ export default function AdminDelivery() {
       <div className="grid g4">
         <Stat label={t("admin.total_orders")} value={stats?.total_orders ?? 0} />
         <Stat label={t("common.delivered")} value={stats?.delivered_orders ?? 0} />
-        <Stat label="Completion" value={`${stats?.completion_rate ?? 0}%`} />
+        <Stat label={t("admin.completion")} value={`${stats?.completion_rate ?? 0}%`} />
         <Stat label={t("admin.disputes")} value={stats?.open_disputes ?? 0} />
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
         <h2 style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 700 }}>{t("admin.map_title")}</h2>
         {mapError ? (
-          <div style={{ padding: 20, textAlign: "center", color: "var(--color-slate)" }}>Map unavailable</div>
+          <div style={{ padding: 20, textAlign: "center", color: "var(--color-slate)" }}>{t("admin.map_unavailable")}</div>
         ) : (
           <Suspense fallback={<div className="skeleton" style={{ height: 340, width: "100%", borderRadius: 8 }} />}>
             <FarmMap pins={pins} height={340} />

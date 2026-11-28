@@ -204,8 +204,8 @@ export default function App() {
   };
   const signIn = (u) => {
     setAuth(null);
-    const displayName = u?.name || user?.name || "back";
-    say(`Welcome, ${displayName}`);
+    const displayName = u?.name || user?.name || "";
+    say(t("toast.welcome", { name: displayName }));
   };
   const signOut = () => {
     logout();
@@ -315,8 +315,8 @@ export default function App() {
   return <div className="tg"><header className="topbar"><div className="topbar-in"><button className="brand-btn" onClick={() => setScreen(session ? "app" : "landing")}><div className="brand">Tunda<span>Gula</span></div><div className="tagline desktop-only">{t("nav.tagline")}</div></button>{screen === "landing" && <nav className="topbar-nav desktop-only">{[["how", t("nav.how")], ["who", t("nav.who")], ["prices", t("nav.prices")]].map(([id, label]) => <a key={id} href={"#" + id}>{label}</a>)}</nav>}<div className="topbar-actions"><button
     onClick={toggleTheme}
     className="tb-ctl tb-icon"
-    title="Toggle Theme"
-    aria-label="Toggle theme"
+    title={t("common.toggle_theme")}
+    aria-label={t("common.toggle_theme")}
   ><i className={`bx ${theme === "dark" ? "bx-sun" : "bx-moon"}`} style={{ fontSize: 20 }} /></button><button
     className="tb-ctl tb-lang mobile-only"
     onClick={() => setLang(nextLang)}

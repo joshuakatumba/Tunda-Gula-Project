@@ -74,7 +74,7 @@ export default function SellerHome({ session, mine, myOrders, gross, advance }) 
             {contracts.map((c) => (
               <div key={c.id} className="between" style={{ fontSize: 13 }}>
                 <span><strong>{c.buyer_name}</strong> · {c.quantity} {tu(c.unit)} {tp(c.listing_name)}</span>
-                <Badge tone="b-green">{c.frequency}</Badge>
+                <Badge tone="b-green">{t(`seller.freq_${c.frequency}`)}</Badge>
               </div>
             ))}
           </div>

@@ -11,8 +11,10 @@ import SellerPayouts from "./SellerPayouts";
 import SellerRecords from "./SellerRecords";
 import ListingForm from "./ListingForm";
 import PlanForm from "./PlanForm";
+import { useI18n } from "../context/I18nContext";
 export default function SellerApp(props) {
   const { tab, listings, setListings, plans, setPlans, orders, setOrders, commission, say, pushSms, sms, session, fetchData } = props;
+  const { t } = useI18n();
   const ME = `S-${session?.id || "01"}`;
   const [creating, setCreating] = useState(false);
   const [relistDraft, setRelistDraft] = useState(null);
@@ -30,33 +32,33 @@ export default function SellerApp(props) {
         await api.post(ENDPOINTS.orderAccept(orderId));
         nextStatus = "accepted";
         pushSms("Buyer \xB7 " + o.buyer, `${o.id}: accepted by ${session?.name || "Farmer"}. Produce is being prepared.`);
-        say("Order accepted. Prepare items for dispatch.");
+        say(t("toast.order_accepted"));
       } else if (o.status === "accepted") {
         await api.post(ENDPOINTS.orderDispatch(orderId), { delivery_mode: o.mode || "Motorcycle" });
         nextStatus = "out_for_delivery";
         pushSms("Buyer \xB7 " + o.buyer, `${o.id}: on the way by ${o.mode || "Motorcycle"}.`);
-        say("Buyer notified \u2014 order is out for delivery");
+        say(t("toast.order_dispatched"));
       } else {
         await api.post(ENDPOINTS.orderDeliver(orderId));
         nextStatus = "delivered";
         pushSms("Buyer \xB7 " + o.buyer, `${o.id}: marked delivered. Please confirm receipt in the app.`);
-        say("Marked delivered. Buyer can now rate your produce.");
+        say(t("toast.order_delivered"));
       }
       if (fetchData) fetchData();
     } catch (err) {
       say(formatApiError(err));
       setOrders((os) => os.map((x) => x.id === o.id ? { ...x, status: nextStatus } : x));
     }
-  }, [setOrders, fetchData, pushSms, say, session]);
+  }, [setOrders, fetchData, pushSms, say, session, t]);
   const handleCreateListing = useCallback(async (_saved) => {
     setCreating(false);
-    say("Your produce is live on the marketplace");
+    say(t("toast.listing_live"));
     if (fetchData) fetchData();
-  }, [fetchData, say]);
+  }, [fetchData, say, t]);
   const handleCreatePlan = useCallback(async (_saved) => {
     setPlanning(false);
-    say("Harvest plan posted. Buyers can reserve it now.");
+    say(t("toast.plan_live"));
     if (fetchData) fetchData();
-  }, [fetchData, say]);
+  }, [fetchData, say, t]);
   return <>{tab === "home" && <SellerHome session={session} mine={mine} myOrders={myOrders} gross={gross} commission={commission} sms={sms} advance={advance} />}{tab === "listings" && <SellerListings mine={mine} setListings={setListings} onCreateListing={() => { setRelistDraft(null); setCreating(true); }} onRelist={(l) => { setRelistDraft(l); setCreating(true); }} />}{tab === "plans" && <SellerPlans myPlans={myPlans} setPlans={setPlans} pushSms={pushSms} say={say} onCreatePlan={() => setPlanning(true)} />}{tab === "sorders" && <SellerOrders myOrders={myOrders} commission={commission} setOrders={setOrders} advance={advance} />}{tab === "sratings" && <SellerRatings session={session} />}{tab === "payouts" && <SellerPayouts myOrders={myOrders} gross={gross} paidOut={paidOut} commission={commission} />}{tab === "records" && <SellerRecords say={say} session={session} />}{creating && <ListingForm initial={relistDraft} onClose={() => { setCreating(false); setRelistDraft(null); }} onSave={handleCreateListing} />}{planning && <PlanForm onClose={() => setPlanning(false)} onSave={handleCreatePlan} />}</>;
 }

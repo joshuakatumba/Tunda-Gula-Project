@@ -113,17 +113,17 @@ export default function Marketplace({ f, setF, onOpen, cart, cartTotal, onChecko
     size="100%"
     className="listing-thumb"
   /></div><div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "4px", flex: 1 }}><h3 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "var(--color-obsidian)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tp(l.name)}</h3><div style={{ fontSize: "12px", color: "var(--color-slate)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.district}{l.verified ? " · ✓" : ""}</div><div style={{ fontSize: "15px", fontWeight: 700, color: "var(--color-forest-ink)", marginTop: 4 }}>{ugx(l.price)} <span style={{ fontSize: "11px", fontWeight: 400, color: "var(--color-pebble)" }}>/{tu(l.unit)}</span></div></div></button>)}</div>}{showFilters && <Modal
-    title="Filters"
+    title={t("common.filter")}
     onClose={() => setShowFilters(false)}
     footer={<Button block variant="primary" onClick={() => setShowFilters(false)}>
-              Show {shown.length} results
+              {t("buyer.show_results", { count: shown.length })}
             </Button>}
-  ><div className="stack" style={{ gap: "24px" }}><Field label="District"><select value={f.district} onChange={(e) => setF({ ...f, district: e.target.value })}>{districts.map((x) => <option key={x}>{x}</option>)}</select></Field><Field label="Max price"><input type="number" value={f.max} placeholder="Any price" onChange={(e) => setF({ ...f, max: e.target.value })} /></Field><Field label="Sort by"><select value={f.sort} onChange={(e) => setF({ ...f, sort: e.target.value })}><option value="relevance">Most relevant</option><option value="price">Lowest price</option><option value="rating">Best rated seller</option><option value="newest">Newest first</option></select></Field><div><div style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-obsidian)", marginBottom: "8px" }}>Seller Rating</div><div className="row" style={{ gap: "8px", flexWrap: "wrap" }}>{[0, 3, 4, 4.5].map((r) => <button
+  ><div className="stack" style={{ gap: "24px" }}><Field label={t("buyer.district")}><select value={f.district} onChange={(e) => setF({ ...f, district: e.target.value })}>{districts.map((x) => <option key={x} value={x}>{x === "All" ? t("common.all") : x}</option>)}</select></Field><Field label={t("buyer.max_price")}><input type="number" value={f.max} placeholder={t("filter.any_price")} onChange={(e) => setF({ ...f, max: e.target.value })} /></Field><Field label={t("buyer.sort_by")}><select value={f.sort} onChange={(e) => setF({ ...f, sort: e.target.value })}><option value="relevance">{t("filter.sort_relevance")}</option><option value="price">{t("filter.sort_price")}</option><option value="rating">{t("filter.sort_rating")}</option><option value="newest">{t("filter.sort_newest")}</option></select></Field><div><div style={{ fontSize: "13px", fontWeight: 600, color: "var(--color-obsidian)", marginBottom: "8px" }}>{t("buyer.rating_min")}</div><div className="row" style={{ gap: "8px", flexWrap: "wrap" }}>{[0, 3, 4, 4.5].map((r) => <button
     key={r}
     className="btn-sm"
     onClick={() => setF({ ...f, minRating: r })}
     style={f.minRating === r ? { borderColor: "var(--color-forest-ink)", background: "var(--color-linen-mist)", fontWeight: 600 } : void 0}
-  >{r === 0 ? "Any" : `${r}+ stars`}</button>)}</div></div><Button variant="text" onClick={() => setF({ ...f, district: "All", max: "", minRating: 0, sort: "relevance" })}>
-              Clear all filters
+  >{r === 0 ? t("buyer.any") : t("filter.stars_plus", { r })}</button>)}</div></div><Button variant="text" onClick={() => setF({ ...f, district: "All", max: "", minRating: 0, sort: "relevance" })}>
+              {t("filter.clear_all")}
             </Button></div></Modal>}</>;
 }

@@ -65,7 +65,7 @@ export default function SellerRecords({ say, session }) {
       say?.(t("common.save"));
       load();
     } catch {
-      say?.("Failed to save");
+      say?.(t("err.save_failed"));
     } finally {
       setBusy(false);
     }
@@ -84,7 +84,7 @@ export default function SellerRecords({ say, session }) {
       say?.(t("seller.credit_approved"));
       load();
     } catch (err) {
-      say?.(err.message || "Credit request failed");
+      say?.(err.message || t("err.credit_failed"));
     } finally {
       setBusy(false);
     }
@@ -152,7 +152,7 @@ export default function SellerRecords({ say, session }) {
             <div className="row" style={{ gap: 8, alignItems: "center" }}>
               <ShieldCheck size={17} color="var(--color-forest-ink)" />
               <strong style={{ fontSize: 15 }}>{t("seller.credit_score")}: {analytics?.credit_score ?? 0}/100</strong>
-              <Badge tone="b-green">{analytics?.credit_tier ?? "Starter"}</Badge>
+              <Badge tone="b-green">{t(`seller.tier_${(analytics?.credit_tier ?? "Starter").toLowerCase()}`)}</Badge>
             </div>
             <div style={{ fontSize: 12, color: "var(--color-slate)", marginTop: 4 }}>
               {t("seller.available_credit")}: <strong>{ugx(analytics?.available_credit ?? 0)}</strong>
@@ -170,7 +170,7 @@ export default function SellerRecords({ say, session }) {
         {credits.length > 0 && (
           <div className="row" style={{ marginTop: 10, gap: 6, flexWrap: "wrap" }}>
             {credits.slice(0, 3).map((c) => (
-              <Badge key={c.id} tone="b-maize">{c.item_type}: {ugx(c.amount)}</Badge>
+              <Badge key={c.id} tone="b-maize">{t(`seller.exp_${c.item_type}`)}: {ugx(c.amount)}</Badge>
             ))}
           </div>
         )}
@@ -184,7 +184,9 @@ export default function SellerRecords({ say, session }) {
           </div>
           <div className="stack" style={{ gap: 6 }}>
             {analytics.insights.map((ins, i) => (
-              <div key={i} style={{ fontSize: 13, color: "var(--color-charcoal)" }}>• {ins.text}</div>
+              <div key={i} style={{ fontSize: 13, color: "var(--color-charcoal)" }}>
+                • {ins.params ? t(`insight.${ins.type}`, { ...ins.params, crop: tp(ins.crop) }) : ins.text}
+              </div>
             ))}
           </div>
         </div>
@@ -290,7 +292,7 @@ export default function SellerRecords({ say, session }) {
                   onClick={() => setCreditForm({ ...creditForm, item_type: c })}
                   style={creditForm.item_type === c ? { borderColor: "var(--color-forest-ink)", background: "var(--color-linen-mist)", fontWeight: 700 } : undefined}
                 >
-                  {c}
+                  {t(`seller.exp_${c}`)}
                 </button>
               ))}
             </div>

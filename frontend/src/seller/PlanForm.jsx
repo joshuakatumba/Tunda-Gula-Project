@@ -7,7 +7,9 @@ import { Button } from "../components/ui/Button";
 import { Select } from "../components/ui/Select";
 import { api } from "../api/client";
 import { ENDPOINTS } from "../api/endpoints";
+import { useI18n } from "../context/I18nContext";
 export default function PlanForm({ onClose, onSave }) {
+  const { t, tu } = useI18n();
   const [d, setD] = useState({ name: "", cat: "Vegetables", planted: "2026-06-01", harvest: "2026-10-15", qty: 500, unit: "kg", price: 2500, deposit: 30 });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -34,23 +36,23 @@ export default function PlanForm({ onClose, onSave }) {
         const firstKey = Object.keys(data)[0];
         setError(`${firstKey}: ${Array.isArray(data[firstKey]) ? data[firstKey][0] : data[firstKey]}`);
       } else {
-        setError(err.message || "Failed to save plan.");
+        setError(err.message || t("err.save_failed"));
       }
     } finally {
       setBusy(false);
     }
   };
-  return <Modal title="New harvest plan" onClose={onClose}>{error && <div style={{ color: "var(--color-alarm-red)", background: "#FCE8E8", padding: "12px 16px", borderRadius: "var(--radius-cards)", fontSize: "13px" }}>{error}</div>}<Field label="Crop name"><input value={d.name} placeholder="e.g. Green peppers" onChange={(e) => setD({ ...d, name: e.target.value })} /></Field><Field label="Category"><Select
+  return <Modal title={t("form.new_plan")} onClose={onClose}>{error && <div style={{ color: "var(--color-alarm-red)", background: "#FCE8E8", padding: "12px 16px", borderRadius: "var(--radius-cards)", fontSize: "13px" }}>{error}</div>}<Field label={t("form.crop_name")}><input value={d.name} placeholder={t("form.crop_placeholder")} onChange={(e) => setD({ ...d, name: e.target.value })} /></Field><Field label={t("form.category")}><Select
     value={d.cat}
     onChange={(val) => setD({ ...d, cat: val })}
-    options={CATEGORIES}
+    options={CATEGORIES.map((c) => ({ value: c, label: t(`cat.${c}`) }))}
     grid={true}
-  /></Field><div className="grid g2"><Field label="Date planted"><input type="date" value={d.planted} onChange={(e) => setD({ ...d, planted: e.target.value })} /></Field><Field label="Expected harvest"><input type="date" value={d.harvest} onChange={(e) => setD({ ...d, harvest: e.target.value })} /></Field></div><div className="grid g3"><Field label="Expected quantity"><input type="number" value={d.qty} onChange={(e) => setD({ ...d, qty: Number(e.target.value) })} /></Field><Field label="Unit"><Select
+  /></Field><div className="grid g2"><Field label={t("form.date_planted")}><input type="date" value={d.planted} onChange={(e) => setD({ ...d, planted: e.target.value })} /></Field><Field label={t("form.expected_harvest")}><input type="date" value={d.harvest} onChange={(e) => setD({ ...d, harvest: e.target.value })} /></Field></div><div className="grid g3"><Field label={t("form.expected_qty")}><input type="number" value={d.qty} onChange={(e) => setD({ ...d, qty: Number(e.target.value) })} /></Field><Field label={t("form.unit")}><Select
     value={d.unit}
     onChange={(val) => setD({ ...d, unit: val })}
-    options={["kg", "bunch", "bag", "head", "tray"]}
+    options={["kg", "bunch", "bag", "head", "tray"].map((u) => ({ value: u, label: tu(u) }))}
     grid={false}
-  /></Field><Field label="Price per unit (UGX)"><input type="number" value={d.price} onChange={(e) => setD({ ...d, price: Number(e.target.value) })} /></Field></div><Field label="Required deposit percentage"><Select
+  /></Field><Field label={t("form.price_ugx")}><input type="number" value={d.price} onChange={(e) => setD({ ...d, price: Number(e.target.value) })} /></Field></div><Field label={t("form.req_deposit")}><Select
     value={String(d.deposit)}
     onChange={(val) => setD({ ...d, deposit: Number(val) })}
     options={[
@@ -66,5 +68,5 @@ export default function PlanForm({ onClose, onSave }) {
     style={{ width: "100%", marginTop: "8px" }}
     disabled={!d.name || busy}
     onClick={handleSave}
-  >{busy ? <Loader2 size={16} className="spin" /> : "Save harvest plan"}</Button></Modal>;
+  >{busy ? <Loader2 size={16} className="spin" /> : t("form.save_plan")}</Button></Modal>;
 }

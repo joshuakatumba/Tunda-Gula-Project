@@ -5,6 +5,18 @@ import sw from "../i18n/sw.json";
 
 const DICTS = { en, lg, sw };
 
+export function translate(key, vars) {
+  const lang = (typeof window !== "undefined" && localStorage.getItem("tg-lang")) || "en";
+  const dict = DICTS[lang] || en;
+  let str = dict[key] ?? en[key] ?? key;
+  if (vars && typeof str === "string") {
+    for (const [k, v] of Object.entries(vars)) {
+      str = str.replaceAll(`{{${k}}}`, String(v));
+    }
+  }
+  return str;
+}
+
 const I18nContext = createContext(null);
 
 export function I18nProvider({ children }) {
@@ -24,6 +36,8 @@ export function I18nProvider({ children }) {
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.documentElement.lang = lang;
+      const tagline = (DICTS[lang] || en)["nav.tagline"] || en["nav.tagline"];
+      document.title = `TundaGula · ${tagline}`;
     }
   }, [lang]);
 

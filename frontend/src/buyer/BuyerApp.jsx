@@ -11,8 +11,10 @@ import MyOrders from "./MyOrders";
 import Checkout from "./Checkout";
 import PreorderModal from "./PreorderModal";
 import RateModal from "./RateModal";
+import { useI18n } from "../context/I18nContext";
 export default function BuyerApp(props) {
-  const { tab, onTabChange, listings, setListings, plans, setPlans, orders, setOrders, commission, say, pushSms, t, session, fetchData } = props;
+  const { tab, onTabChange, listings, setListings, plans, setPlans, orders, setOrders, commission, say, pushSms, session, fetchData } = props;
+  const { t, tp, tu } = useI18n();
   const [open, setOpen] = useState(null);
   const [cart, setCart] = useState([]);
   const [checkout, setCheckout] = useState(false);
@@ -29,8 +31,8 @@ export default function BuyerApp(props) {
       const has = c.find((x) => x.id === l.id);
       return has ? c.map((x) => x.id === l.id ? { ...x, qty: x.qty + qty } : x) : [...c, { ...l, qty }];
     });
-    say(`${qty} ${l.unit} ${l.name} added to your basket`);
-  }, [say]);
+    say(t("toast.added_basket", { qty, unit: tu(l.unit), name: tp(l.name) }));
+  }, [say, t, tp, tu]);
   const pay = useCallback(async ({ provider = "MTN", phone, deliveryMode = "Motorcycle" } = {}) => {
     try {
       const buyerPhone = phone || session?.phone || "0772000000";
@@ -49,7 +51,7 @@ export default function BuyerApp(props) {
           amount: ord.total + (ord.delivery_fee || 0),
         });
       }
-      say(`Paid ${ugx(batchRes?.total_amount ?? cartTotal)} · ${provider} Mobile Money`);
+      say(t("toast.paid_order", { amount: ugx(batchRes?.total_amount ?? cartTotal), provider }));
       setCart([]);
       setCheckout(false);
       setOpen(null);
@@ -60,7 +62,7 @@ export default function BuyerApp(props) {
       say(formatApiError(err));
       throw err;
     }
-  }, [cart, session, fetchData, say, cartTotal, onTabChange]);
+  }, [cart, session, fetchData, say, cartTotal, onTabChange, t]);
   const raiseDispute = useCallback(async (o, reason) => {
     try {
       const orderId = Number(String(o.id).replace("ORD-", "").replace("PRE-", ""));
@@ -69,13 +71,13 @@ export default function BuyerApp(props) {
         reason,
         value: o.qty * o.price,
       });
-      say("Dispute submitted");
+      say(t("toast.dispute_submitted"));
       if (fetchData) await fetchData();
     } catch (err) {
       say(formatApiError(err));
       throw err;
     }
-  }, [fetchData, say]);
+  }, [fetchData, say, t]);
   const placePreorder = useCallback(async (plan, qty, provider) => {
     try {
       const planId = String(plan.id).replace("H-", "");
@@ -98,14 +100,14 @@ export default function BuyerApp(props) {
         });
       }
       setPreordering(null);
-      say(`Deposit paid \xB7 ${qty} ${plan.unit} reserved`);
+      say(t("toast.deposit_paid", { qty, unit: tu(plan.unit) }));
       clearCache();
       if (fetchData) await fetchData();
       if (onTabChange) onTabChange("myorders");
     } catch (err) {
       say(formatApiError(err));
     }
-  }, [session, fetchData, say, onTabChange]);
+  }, [session, fetchData, say, onTabChange, t, tu]);
   const confirmReceipt = useCallback(async (o) => {
     try {
       const orderId = o.id.replace("ORD-", "");
@@ -124,11 +126,11 @@ export default function BuyerApp(props) {
       await api.post(ENDPOINTS.orderRate(orderId), { stars, comment });
       if (fetchData) await fetchData();
       setRating(null);
-      say("Thank you \u2014 your rating is now on the farmer's profile");
+      say(t("toast.rated"));
     } catch (err) {
       say(formatApiError(err));
     }
-  }, [rating, say, fetchData]);
+  }, [rating, say, fetchData, t]);
   const openedListing = useMemo(() => {
     if (!open) return null;
     return listings.find((x) => x.id === open) || open;

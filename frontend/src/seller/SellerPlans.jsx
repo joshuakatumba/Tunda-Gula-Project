@@ -27,7 +27,7 @@ export default function SellerPlans({ myPlans, setPlans, say, onCreatePlan }) {
       const res = await api.post(ENDPOINTS.planAdvance(realId));
       say?.(`${t("seller.draw_advance")}: ${ugx(res.advance_sent)}`);
     } catch (err) {
-      say?.(err.message || "No advance available");
+      say?.(err.message || t("err.no_advance"));
     } finally {
       setBusyId(null);
     }

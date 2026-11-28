@@ -8,10 +8,10 @@ export default function RejectModal({ seller, onClose, onReject }) {
   const { t } = useI18n();
   const [reason, setReason] = useState("");
   const presets = [
-    "NIN name does not match phone registration",
-    "National ID unreadable",
-    "Farm location outside coverage zone",
-    "Duplicate account registration",
+    t("admin.reject_p1"),
+    t("admin.reject_p2"),
+    t("admin.reject_p3"),
+    t("admin.reject_p4"),
   ];
 
   return (
