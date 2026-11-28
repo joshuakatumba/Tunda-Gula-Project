@@ -23,7 +23,7 @@ async function request(path, options) {
       ...options?.headers ?? {}
     }
   });
-  if (res.status === 401) {
+  if (res.status === 401 && !isPublic) {
     const data2 = await res.json().catch(() => ({}));
     if (data2.code === "token_expired" && onTokenRefresh && !isRefreshing) {
       isRefreshing = true;
