@@ -49,6 +49,12 @@ else:
     print(f'  Superuser already exists: {phone}')
 "
 
+# Seed Day 1 demo accounts (admin@tundagula.ug, seller@tundagula.ug, buyer@tundagula.ug)
+if [ "${SEED_DEMO_USERS:-true}" = "true" ]; then
+    echo "Seeding demo accounts..."
+    python manage.py seed_day_one || true
+fi
+
 # Collect static files
 echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear 2>/dev/null || true
