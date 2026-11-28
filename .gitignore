@@ -90,3 +90,5 @@ tmp/
 temp/
 *.log
 .cache/
+app-shell
+app-shell copy
